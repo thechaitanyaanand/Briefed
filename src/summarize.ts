@@ -172,7 +172,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
           stream: false,
           options: { num_predict: 1000 }
         }),
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(60000)
       });
 
       if (!response.ok) {
