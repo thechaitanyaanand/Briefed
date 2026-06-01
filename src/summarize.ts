@@ -170,7 +170,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
           model: config.model,
           prompt,
           stream: false,
-          options: { num_predict: 200 }
+          options: { num_predict: 1000 }
         }),
         signal: AbortSignal.timeout(15000)
       });

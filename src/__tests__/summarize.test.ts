@@ -193,7 +193,7 @@ describe('summarize.ts', () => {
       expect(body.model).toBe('custom-llama');
       expect(body.prompt).toContain('Summarize the following git diff.');
       expect(body.stream).toBe(false);
-      expect(body.options).toEqual({ num_predict: 200 });
+      expect(body.options).toEqual({ num_predict: 1000 });
     });
   });
 
