@@ -93,6 +93,22 @@ describe('hook.ts', () => {
     expect(updatedMerge).toContain('briefed run');
   });
 
+  it('should normalize all line endings to Unix LF', () => {
+    fs.mkdirSync(GIT_DIR, { recursive: true });
+    const hooksDir = path.join(GIT_DIR, 'hooks');
+    fs.mkdirSync(hooksDir, { recursive: true });
+
+    // Setup an existing hook with CRLF endings
+    const existingMerge = '#!/bin/sh\r\necho "User merge hook"\r\n';
+    fs.writeFileSync(path.join(hooksDir, 'post-merge'), existingMerge, 'utf-8');
+
+    install(TEST_DIR);
+
+    const content = fs.readFileSync(path.join(hooksDir, 'post-merge'), 'utf-8');
+    expect(content).not.toContain('\r\n');
+    expect(content).toContain('\n');
+  });
+
   it('should skip installation if Briefed hook sentinel is already present', () => {
     fs.mkdirSync(GIT_DIR, { recursive: true });
     const hooksDir = path.join(GIT_DIR, 'hooks');

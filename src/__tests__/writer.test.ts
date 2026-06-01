@@ -242,6 +242,29 @@ Summary 1
       expect(content).not.toContain('c2');
       expect(content).not.toContain('c1');
     });
+
+    it('should warn and clean reversed markers', () => {
+      const initialContent = `
+<!-- BRIEFED_END -->
+Some middle text.
+<!-- BRIEFED_START -->
+      `;
+      fs.writeFileSync(TEST_FILE, initialContent, 'utf-8');
+
+      const entry: ContextEntry = {
+        date: '2026-06-01T12:00:00Z',
+        commitHash: 'abcdef',
+        summary: 'Appended content',
+        filesChanged: [],
+      };
+
+      writeEntry(entry, DEFAULT_CONFIG);
+
+      const content = fs.readFileSync(TEST_FILE, 'utf-8');
+      expect(content).toContain('<!-- BRIEFED_START -->');
+      expect(content).toContain('<!-- BRIEFED_END -->');
+      expect(content).toContain('abcdef');
+    });
   });
 
   describe('getLastEntry', () => {

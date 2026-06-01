@@ -222,6 +222,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
 
     // 4. Word-Count Enforcement (response > 150 words)
     summary = enforceWordLimit(summary, 150);
+    summary = summary.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;');
 
   } catch (error: any) {
     console.warn(

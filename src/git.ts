@@ -75,7 +75,7 @@ function isIgnored(filePath: string, ignored: string[] = []): boolean {
  * Gets the diff result between ORIG_HEAD and HEAD.
  * Returns an empty DiffResult if ORIG_HEAD is missing or any error occurs.
  */
-export function getDiff(cwd?: string, ignored?: string[]): DiffResult {
+export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean): DiffResult {
   const fallbackResult: DiffResult = {
     files: [],
     filesByDir: {},
@@ -94,17 +94,32 @@ export function getDiff(cwd?: string, ignored?: string[]): DiffResult {
     return fallbackResult;
   }
 
+  let baseRef = 'ORIG_HEAD';
   let numstatOutput = '';
   try {
     numstatOutput = runGit(['diff', 'ORIG_HEAD', 'HEAD', '--numstat'], cwd);
+    baseRef = 'ORIG_HEAD';
   } catch (error) {
-    // Fallback/Error handling for missing ORIG_HEAD (first-ever pull or fresh clone)
-    return fallbackResult;
+    try {
+      numstatOutput = runGit(['diff', 'HEAD~1', 'HEAD', '--numstat'], cwd);
+      baseRef = 'HEAD~1';
+    } catch (err2) {
+      try {
+        numstatOutput = runGit(['diff', '4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc', 'HEAD', '--numstat'], cwd);
+        baseRef = '4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc';
+      } catch (err3) {
+        return fallbackResult;
+      }
+    }
+  }
+
+  if (verbose || process.argv.includes('-v') || process.argv.includes('--verbose')) {
+    console.log(`[Briefed Git] Resolved base ref: ${baseRef}`);
   }
 
   let rawDiffOutput = '';
   try {
-    rawDiffOutput = runGit(['diff', 'ORIG_HEAD', 'HEAD'], cwd);
+    rawDiffOutput = runGit(['diff', baseRef, 'HEAD'], cwd);
   } catch (error) {
     return fallbackResult;
   }
@@ -206,7 +221,7 @@ export function getDiff(cwd?: string, ignored?: string[]): DiffResult {
   let rawDiff = rawDiffOutput;
   if (rawDiffOutput.length > 8000) {
     try {
-      const diffStat = runGit(['diff', 'ORIG_HEAD', 'HEAD', '--stat'], cwd);
+      const diffStat = runGit(['diff', baseRef, 'HEAD', '--stat'], cwd);
       const allDiffLines = rawDiffOutput.split(/\r?\n/);
       const totalLinesCount = allDiffLines.length;
       const first200Lines = allDiffLines.slice(0, 200).join('\n');

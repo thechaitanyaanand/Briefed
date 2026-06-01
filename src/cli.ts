@@ -9,7 +9,7 @@ import { getConfig } from './config.js';
 import { getDiff } from './git.js';
 import { summarize } from './summarize.js';
 import { writeEntry, getLastEntry } from './writer.js';
-import { install } from './hook.js';
+import { install, uninstall } from './hook.js';
 import { BriefedConfig, ContextEntry, DiffResult } from './types.js';
 
 const program = new Command();
@@ -159,14 +159,28 @@ program
         }
       }
 
-      const diff = getDiff(undefined, cfg.ignored);
+      const diff = getDiff(undefined, cfg.ignored, options.verbose);
 
       if (diff.isEmpty) {
         console.log(chalk.gray('· No new commits or changes detected.'));
         process.exit(0);
       }
 
-      const summarizeOutput = await summarize({ diff, config: cfg });
+      const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      let idx = 0;
+      const spinnerInterval = setInterval(() => {
+        process.stdout.write(`\r${frames[idx]} Summarizing changes...`);
+        idx = (idx + 1) % frames.length;
+      }, 80);
+
+      let summarizeOutput;
+      try {
+        summarizeOutput = await summarize({ diff, config: cfg });
+      } finally {
+        clearInterval(spinnerInterval);
+        process.stdout.write('\r\x1b[K');
+      }
+
       writeEntry(summarizeOutput.entry, cfg);
 
       console.log(
@@ -218,12 +232,29 @@ program
   });
 
 program
+  .command('uninstall')
+  .description('Uninstall Git hooks')
+  .action(() => {
+    try {
+      uninstall();
+      console.log(chalk.green('✓ Git hooks uninstalled successfully'));
+    } catch (error: any) {
+      console.error(chalk.red(`Error: ${error?.message || error}`));
+      process.exit(1);
+    }
+  });
+
+program
   .command('config')
   .description('Print the resolved BriefedConfig configuration')
   .action(() => {
     try {
       const cfg = getConfig();
-      console.log(JSON.stringify(cfg, null, 2));
+      const cloned = { ...cfg };
+      if (cloned.apiKey) {
+        cloned.apiKey = '[REDACTED]';
+      }
+      console.log(JSON.stringify(cloned, null, 2));
     } catch (error: any) {
       console.error(chalk.red(`Error: ${error?.message || error}`));
       process.exit(1);

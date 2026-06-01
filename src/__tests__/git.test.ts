@@ -74,10 +74,12 @@ describe('git.ts', () => {
       });
     });
 
-    it('should return the fallback empty DiffResult if ORIG_HEAD is missing (diff --numstat fails)', () => {
+    it('should return the fallback empty DiffResult if ORIG_HEAD and all fallbacks fail', () => {
       mockGitResponses = {
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': new Error('ambiguous argument \'ORIG_HEAD\''),
+        'diff HEAD~1 HEAD --numstat': new Error('no parent commit'),
+        'diff 4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc HEAD --numstat': new Error('empty tree error'),
       };
 
       const result = getDiff();
@@ -90,6 +92,43 @@ describe('git.ts', () => {
         commitHash: '',
         isEmpty: true,
       });
+    });
+
+    it('should fallback to HEAD~1 if ORIG_HEAD is missing', () => {
+      mockGitResponses = {
+        'rev-parse HEAD': 'hash123\n',
+        'diff ORIG_HEAD HEAD --numstat': new Error('ambiguous argument \'ORIG_HEAD\''),
+        'diff HEAD~1 HEAD --numstat': '5\t2\tsrc/git.ts\n',
+        'diff HEAD~1 HEAD': 'diff from HEAD~1',
+        'reflog': 'commit: some message\n',
+        'log -1': 'some message\n',
+      };
+
+      const result = getDiff();
+      expect(result.commitHash).toBe('hash123');
+      expect(result.additions).toBe(5);
+      expect(result.deletions).toBe(2);
+      expect(result.files).toEqual(['src/git.ts']);
+      expect(result.rawDiff).toBe('diff from HEAD~1');
+    });
+
+    it('should fallback to empty tree hash if ORIG_HEAD and HEAD~1 are missing', () => {
+      mockGitResponses = {
+        'rev-parse HEAD': 'hash123\n',
+        'diff ORIG_HEAD HEAD --numstat': new Error('ambiguous argument \'ORIG_HEAD\''),
+        'diff HEAD~1 HEAD --numstat': new Error('no parent commit'),
+        'diff 4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc HEAD --numstat': '15\t4\tsrc/git.ts\n',
+        'diff 4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc HEAD': 'diff from empty tree',
+        'reflog': 'commit: initial\n',
+        'log -1': 'initial commit\n',
+      };
+
+      const result = getDiff();
+      expect(result.commitHash).toBe('hash123');
+      expect(result.additions).toBe(15);
+      expect(result.deletions).toBe(4);
+      expect(result.files).toEqual(['src/git.ts']);
+      expect(result.rawDiff).toBe('diff from empty tree');
     });
 
     it('should parse numstat and raw diff successfully', () => {

@@ -501,4 +501,25 @@ describe('summarize.ts', () => {
       expect(words.length).toBe(150);
     });
   });
+
+  describe('LLM Response Sanitization', () => {
+    it('should sanitize HTML comment tags from LLM response', async () => {
+      const responseWithComments = 'Here is <!-- COMMENT --> test --> and <!-- again.';
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        isEmpty: false
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: responseWithComments })
+      });
+
+      const output = await summarize({ diff, config: defaultConfig });
+      expect(output.entry.summary).toBe('Here is &lt;!-- COMMENT --&gt; test --&gt; and &lt;!-- again.');
+    });
+  });
 });

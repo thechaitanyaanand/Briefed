@@ -33,4 +33,19 @@ describe('CLI Integration Tests', () => {
     
     expect(output).toContain('-i, --interactive');
   });
+
+  it('should display help for the uninstall command', () => {
+    const output = execSync(`node ${cliPath} uninstall --help`, { encoding: 'utf-8' });
+    expect(output).toContain('Uninstall Git hooks');
+  });
+
+  it('should print sanitized config', () => {
+    // Temporarily set an environment variable to mock configuration API key
+    const output = execSync(`node ${cliPath} config`, {
+      encoding: 'utf-8',
+      env: { ...process.env, BRIEFED_API_KEY: 'super-secret-key' }
+    });
+    const parsed = JSON.parse(output);
+    expect(parsed.apiKey).toBe('[REDACTED]');
+  });
 });

@@ -109,7 +109,8 @@ export function install(cwd?: string): { installed: string[], skipped: string[],
       }
       toAppend += `# BRIEFED_HOOK_APPENDED_START\n${hook.bodyContent}\n# BRIEFED_HOOK_APPENDED_END\n`;
 
-      fs.writeFileSync(hookPath, content + toAppend);
+      const sanitizedAppended = (content + toAppend).replace(/\r\n/g, '\n');
+      fs.writeFileSync(hookPath, sanitizedAppended);
       warnings.push(`Appended to existing hook: ${hook.name}`);
       installed.push(hook.name);
 
@@ -120,7 +121,8 @@ export function install(cwd?: string): { installed: string[], skipped: string[],
     } else {
       // Create new standalone hook
       fs.mkdirSync(path.dirname(hookPath), { recursive: true });
-      fs.writeFileSync(hookPath, hook.fullContent);
+      const sanitizedStandalone = hook.fullContent.replace(/\r\n/g, '\n');
+      fs.writeFileSync(hookPath, sanitizedStandalone);
       installed.push(hook.name);
 
       // On non-Windows: ensure executable bit is set
