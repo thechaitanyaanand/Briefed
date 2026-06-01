@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — Briefed Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="custom-cursor"></div>
+
+  <!-- Announcement Banner -->
+  <div class="top-announcement">
+    <div class="marquee-wrapper-top">
+      <div class="marquee-content-top">
+        <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
+        <span>⚡ VERSION 0.9.0-BETA.1 IS LIVE! ⚡</span>
+        <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
+        <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Header -->
+  <header class="main-header">
+    <a href="index.html" class="nav-btn-link" style="text-decoration:none;">
+      <div class="logo-box">
+        <span class="logo-text">BRIEFED</span>
+        <span class="logo-blinker">■</span>
+      </div>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link">HOME</a>
+      <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="nav-btn-link">
+        <button class="header-btn">GITHUB</button>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-container">
+    <div class="docs-layout-container">
+      
+      <!-- Left-hand sidebar navigation -->
+      <aside class="docs-sidebar-card">
+        <h3 class="sidebar-title">DOCUMENTATION</h3>
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item active"><a href="getting-started.html">01. GETTING STARTED</a></li>
+          <li class="sidebar-menu-item"><a href="configuration.html">02. CONFIGURATION BOARD</a></li>
+          <li class="sidebar-menu-item"><a href="cli-reference.html">03. CLI COMMANDS</a></li>
+          <li class="sidebar-menu-item"><a href="ci-cd.html">04. CI/CD INTEGRATION</a></li>
+        </ul>
+      </aside>
+
+      <!-- Right-hand main content -->
+      <article class="docs-content-card">
+        <h1>01. GETTING STARTED GUIDE</h1>
+        <p>Briefed bridges the AI latency context gap for developers by automatically summarizing code diffs and keeping context logs up-to-date in target files like CLAUDE.md. This ensures your AI pair programmer (Cursor, Windsurf, Claude Dev) is always synced with recent pulled, merged, or rebased edits in the background.</p>
+
+        <h2>📦 1. Installation</h2>
+        <p>Install Briefed globally to run it across any repository on your local computer, or add it to your local project dependency list:</p>
+        <pre><code># Install globally (Recommended for CLI)
+npm install -g briefed
+
+# OR install locally inside your project folder
+npm install --save-dev briefed</code></pre>
+
+        <h2>⚙️ 2. Hooks Initialization</h2>
+        <p>Once installed, navigate to the root directory of your Git repository and register the background Git hooks:</p>
+        <pre><code># Default initialization (Installs hooks automatically)
+briefed init
+
+# Interactive setup wizard (Highly Recommended)
+briefed init --interactive</code></pre>
+        <p>This command checks if Husky is active. If Husky is present, it registers in <code>.husky/post-merge</code> and <code>.husky/post-rewrite</code>. If Husky is absent, it creates or appends to standard <code>.git/hooks/post-merge</code> and <code>.git/hooks/post-rewrite</code> scripts.</p>
+
+        <div class="brutal-callout callout-yellow">
+          <div class="callout-title">⚠️ Windows CRLF hook safety</div>
+          <p class="callout-body">Windows carriage returns can corrupt hook files, throwing command interpreter syntax errors inside Git Bash. Briefed resolves this by automatically sanitizing and forcing standard Unix LF (<code>\n</code>) line-endings on all hook files on all platforms.</p>
+        </div>
+
+        <h2>🔑 3. Setting API Keys</h2>
+        <p>To connect Cloud LLM backend aggregators (Google Gemini or Anthropic Claude), you must configure credentials. You have three flexible options depending on your security preferences:</p>
+        
+        <h3>Option A: Shell Environment Variables (Temporary/Session-Only)</h3>
+        <p>Exporting the API key inside your terminal session keeps it in-memory, making it extremely secure against accidental check-ins to GitHub.</p>
+        <pre><code># Git Bash / macOS / Linux
+export GEMINI_API_KEY="your-google-studio-api-key"
+
+# Windows PowerShell
+$env:GEMINI_API_KEY="your-google-studio-api-key"
+
+# Windows CMD Prompt
+set GEMINI_API_KEY=your-google-studio-api-key</code></pre>
+
+        <h3>Option B: Global User Configuration (Permanent for all local projects)</h3>
+        <p>Place a <code>.briefed.json</code> configuration file inside your global user home directory (e.g. <code>C:\Users\Username</code> on Windows or <code>~/.briefed.json</code> on macOS/Linux):</p>
+        <pre><code>{
+  "apiKey": "your-gemini-or-anthropic-api-key"
+}</code></pre>
+        <p>Briefed automatically deep-merges this global file as a fallback, ensuring your credentials are accessible across all repositories without cluttering repository folders.</p>
+
+        <h3>Option C: Local Configuration (Permanent for this repo)</h3>
+        <p>Place `.briefed.json` directly in your repository root directory. Make sure you add <code>.briefed.json</code> to your <code>.gitignore</code> file to prevent leaking secrets on Git repositories.</p>
+
+        <h2>🚀 4. Triggering Your First Sync</h2>
+        <p>To test and manually execute a synchronizer diff check and generate LLM context entries inside your active target file, run the command:</p>
+        <pre><code>briefed run</code></pre>
+        <p>Use the verbose flag to inspect compilation diagnostics, diff lines, model auto-resolutions, and elapsed time statistics:</p>
+        <pre><code>briefed run --verbose</code></pre>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Neo-Brutalist Footer -->
+  <footer class="main-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-text">BRIEFED CLI</span>
+        <p class="brand-sub">The background AI context synchronization engine.</p>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">RESOURCE MAP</h4>
+        <a href="index.html#how-it-works" class="footer-link">Engine Architecture</a>
+        <a href="index.html#simulator" class="footer-link">Live Hook Simulator</a>
+        <a href="index.html#config-grid" class="footer-link">Configuration Dashboard</a>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">DEVELOPER</h4>
+        <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="footer-link">GitHub Repository</a>
+        <a href="https://www.npmjs.com/package/briefed" target="_blank" class="footer-link">npm Package</a>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <p class="copy-text">© 2026 Briefed CLI. Released under the MIT License.</p>
+      <div class="footer-console-prompt">admin@briefed-shell:~$ <span class="blinking-footer-block">■</span></div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

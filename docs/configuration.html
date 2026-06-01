@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration Board — Briefed Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="custom-cursor"></div>
+
+  <!-- Announcement Banner -->
+  <div class="top-announcement">
+    <div class="marquee-wrapper-top">
+      <div class="marquee-content-top">
+        <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
+        <span>⚡ VERSION 0.9.0-BETA.1 IS LIVE! ⚡</span>
+        <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
+        <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Header -->
+  <header class="main-header">
+    <a href="index.html" class="nav-btn-link" style="text-decoration:none;">
+      <div class="logo-box">
+        <span class="logo-text">BRIEFED</span>
+        <span class="logo-blinker">■</span>
+      </div>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link">HOME</a>
+      <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="nav-btn-link">
+        <button class="header-btn">GITHUB</button>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-container">
+    <div class="docs-layout-container">
+      
+      <!-- Left-hand sidebar navigation -->
+      <aside class="docs-sidebar-card">
+        <h3 class="sidebar-title">DOCUMENTATION</h3>
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item"><a href="getting-started.html">01. GETTING STARTED</a></li>
+          <li class="sidebar-menu-item active"><a href="configuration.html">02. CONFIGURATION BOARD</a></li>
+          <li class="sidebar-menu-item"><a href="cli-reference.html">03. CLI COMMANDS</a></li>
+          <li class="sidebar-menu-item"><a href="ci-cd.html">04. CI/CD INTEGRATION</a></li>
+        </ul>
+      </aside>
+
+      <!-- Right-hand main content -->
+      <article class="docs-content-card">
+        <h1>02. CONFIGURATION BOARD</h1>
+        <p>Briefed incorporates a flexible, layered configuration structure designed to adapt easily to multi-developer teams. Configurations are loaded and deep-merged based on a strict priority cascade:</p>
+        <ol>
+          <li><strong>Local Project Config (<code>.briefed.json</code>)</strong> — Repository-specific overrides (committed or ignored).</li>
+          <li><strong>Global User Config (<code>~/.briefed.json</code>)</strong> — System developer credentials (like private keys).</li>
+          <li><strong>Built-in defaults</strong> — System fallbacks.</li>
+        </ol>
+
+        <h2>📋 Complete Blueprint Code</h2>
+        <p>Here is a complete configuration template detailing every operational parameter for <code>.briefed.json</code>:</p>
+        <pre><code>{
+  "target": "auto",
+  "backend": "gemini",
+  "model": "gemini-2.5-flash",
+  "apiUrl": "http://localhost:11434",
+  "window": {
+    "days": 7,
+    "entries": 10
+  },
+  "ignored": [
+    "*.lock",
+    "dist/",
+    "node_modules/",
+    "coverage/"
+  ],
+  "minDiffLines": 10,
+  "maxSummaryWords": 150
+}</code></pre>
+
+        <h2>⚙️ Configuration Parameter Guide</h2>
+        
+        <h3>1. <code>target</code> (Type: <code>string</code> | Default: <code>"auto"</code>)</h3>
+        <p>Specifies the relative or absolute file path to write your AI context entries. When set to <code>"auto"</code>, Briefed dynamically scans your workspace root directory for context files in the following priority order:
+        <ol>
+          <li><code>CLAUDE.md</code> (First priority)</li>
+          <li><code>AGENTS.md</code></li>
+          <li><code>.github/copilot-instructions.md</code></li>
+        </ol>
+        If none are resolved, Briefed automatically generates a new <code>CLAUDE.md</code> file in your workspace root.</p>
+
+        <h3>2. <code>backend</code> (Type: <code>"ollama" | "gemini" | "anthropic" | "none"</code> | Default: <code>"ollama"</code>)</h3>
+        <p>Chooses the LLM summarizing engine:
+        <ul>
+          <li><code>"ollama"</code>: Connects locally to run offline custom models (100% free).</li>
+          <li><code>"gemini"</code>: Leverages fast and cost-efficient Google Gemini API models.</li>
+          <li><code>"anthropic"</code>: Connects to high-fidelity Anthropic messages APIs.</li>
+          <li><code>"none"</code>: Bypasses LLMs completely, running standard local mechanical heuristics instantly.</li>
+        </ul>
+        </p>
+
+        <h3>3. <code>model</code> (Type: <code>string</code> | Default: <code>"llama3"</code>)</h3>
+        <p>Specifies the model identifier passed to the active backend. If you override the backend at runtime (e.g. running <code>briefed run --backend gemini</code>), Briefed incorporates a **Smart Mismatch Auto-Resolution** that swaps backend-incompatible models to standard defaults (such as <code>gemini-2.5-flash</code>) with console warnings to prevent crashes.</p>
+
+        <h3>4. <code>window</code> (Type: <code>object</code>)</h3>
+        <p>Configures the automated rolling fader window to prune older history and protect context lengths:
+        <ul>
+          <li><code>window.days</code> (Type: <code>number</code> | Default: <code>7</code>): Older entries beyond these days are deleted automatically.</li>
+          <li><code>window.entries</code> (Type: <code>number</code> | Default: <code>10</code>): Keeps the latest N entries, deleting oldest logs when exceeded.</li>
+        </ul>
+        </p>
+
+        <h3>5. <code>ignored</code> (Type: <code>string[]</code> | Default: <code>["*.lock", "dist/", "*.map", "*.min.js", "*.min.css"]</code>)</h3>
+        <p>A list of glob matches. Files fitting these patterns are ignored and discarded during git diff parsing, preventing lockfile updates or compiled folder outputs from bloating token usage.</p>
+
+        <h3>6. <code>minDiffLines</code> (Type: <code>number</code> | Default: <code>10</code>)</h3>
+        <p>The total number of changed lines (insertions + deletions) below which Briefed skips LLM summaries completely, instantly writing mechanical summaries locally to save API quotas and compute time.</p>
+
+        <h3>7. <code>maxSummaryWords</code> (Type: <code>number</code> | Default: <code>150</code>)</h3>
+        <p>Enforces a maximum word-count cap on LLM response summaries. If the returned summary exceeds this limit, Briefed iterates backward and prunes content at the last complete line boundary to keep log lists concise.</p>
+
+        <div class="brutal-callout callout-violet">
+          <div class="callout-title">🛡️ Automated Secret Scrubbing</div>
+          <p class="callout-body">Briefed protects your security! Before sending diffs to cloud APIs (Gemini or Anthropic), it runs client-side regex detection filters to mask keys, database passwords, AWS credentials, bearer tokens, and GitHub SSH keys, ensuring secrets are never leaked to external networks.</p>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Neo-Brutalist Footer -->
+  <footer class="main-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-text">BRIEFED CLI</span>
+        <p class="brand-sub">The background AI context synchronization engine.</p>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">RESOURCE MAP</h4>
+        <a href="index.html#how-it-works" class="footer-link">Engine Architecture</a>
+        <a href="index.html#simulator" class="footer-link">Live Hook Simulator</a>
+        <a href="index.html#config-grid" class="footer-link">Configuration Dashboard</a>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">DEVELOPER</h4>
+        <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="footer-link">GitHub Repository</a>
+        <a href="https://www.npmjs.com/package/briefed" target="_blank" class="footer-link">npm Package</a>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <p class="copy-text">© 2026 Briefed CLI. Released under the MIT License.</p>
+      <div class="footer-console-prompt">admin@briefed-shell:~$ <span class="blinking-footer-block">■</span></div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

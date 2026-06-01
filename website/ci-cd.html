@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CI/CD Pipelines — Briefed Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="custom-cursor"></div>
+
+  <!-- Announcement Banner -->
+  <div class="top-announcement">
+    <div class="marquee-wrapper-top">
+      <div class="marquee-content-top">
+        <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
+        <span>⚡ VERSION 0.9.0-BETA.1 IS LIVE! ⚡</span>
+        <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
+        <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Header -->
+  <header class="main-header">
+    <a href="index.html" class="nav-btn-link" style="text-decoration:none;">
+      <div class="logo-box">
+        <span class="logo-text">BRIEFED</span>
+        <span class="logo-blinker">■</span>
+      </div>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link">HOME</a>
+      <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="nav-btn-link">
+        <button class="header-btn">GITHUB</button>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-container">
+    <div class="docs-layout-container">
+      
+      <!-- Left-hand sidebar navigation -->
+      <aside class="docs-sidebar-card">
+        <h3 class="sidebar-title">DOCUMENTATION</h3>
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item"><a href="getting-started.html">01. GETTING STARTED</a></li>
+          <li class="sidebar-menu-item"><a href="configuration.html">02. CONFIGURATION BOARD</a></li>
+          <li class="sidebar-menu-item"><a href="cli-reference.html">03. CLI COMMANDS</a></li>
+          <li class="sidebar-menu-item active"><a href="ci-cd.html">04. CI/CD INTEGRATION</a></li>
+        </ul>
+      </aside>
+
+      <!-- Right-hand main content -->
+      <article class="docs-content-card">
+        <h1>04. CI/CD INTEGRATION</h1>
+        <p>In collaborative team environments, developers often merge Pull Requests directly through the GitHub web user interface. Since local Git hooks do not run during online merges, your repository context files (like CLAUDE.md) can slowly fall out of alignment.</p>
+        <p>To resolve this, deploy Briefed directly in your CI/CD pipelines. This ensures that every direct push or merge to your main branches automatically triggers a context compilation check and commits updates immediately back to repository files.</p>
+
+        <h2>🐙 Complete GitHub Action Blueprint</h2>
+        <p>Create a file named <code>.github/workflows/briefed.yml</code> inside your project directory and paste the following workflow script:</p>
+        <pre><code>name: Briefed Context Update
+
+on:
+  push:
+    branches:
+      - main  # Adjust this to match your default branch name
+
+permissions:
+  contents: write
+
+jobs:
+  briefed-context:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Compares previous commit (HEAD^) with current commit (HEAD)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Set ORIG_HEAD manually
+        run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
+
+      - name: Run briefed
+        run: node dist/cli.js run
+        env:
+          BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Check and commit context changes
+        run: |
+          if ! git diff --quiet CLAUDE.md; then
+            git config --local user.name "github-actions[bot]"
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git add CLAUDE.md
+            git commit -m "Update AI context [skip ci]"
+            git push
+          fi</code></pre>
+
+        <h2>⚙️ Critical Setup Explanations</h2>
+        
+        <h3>1. <code>fetch-depth: 2</code></h3>
+        <p>By default, the GitHub Checkout action performs a shallow fetch (depth of 1) to optimize build speed. Briefed needs to compare commits to generate the summary logs, so you must configure <code>fetch-depth: 2</code> to fetch the latest commit and its immediate parent.</p>
+
+        <h3>2. <code>git update-ref ORIG_HEAD $(git rev-parse HEAD~1)</code></h3>
+        <p>During local merges, Git automatically sets the <code>ORIG_HEAD</code> reference. In CI checkout runners, this reference is absent. We resolve this by running a git reference pointer updates manually, setting <code>ORIG_HEAD</code> to point directly to the parent commit (<code>HEAD~1</code>) before executing the CLI run.</p>
+
+        <h3>3. <code>[skip ci]</code> in Commit Messages</h3>
+        <p>When the workflow pushes updates back to the repository, it could trigger a recursive loop (the push triggering a new action run, which pushes changes, and so on). Appending the tag <code>[skip ci]</code> (or <code>[ci skip]</code>) inside the commit message instructs GitHub Actions to ignore this push, preventing infinite workflows.</p>
+
+        <div class="brutal-callout callout-violet">
+          <div class="callout-title">🔑 Configuring GitHub secrets</div>
+          <p class="callout-body">Ensure your cloud API keys are safely configured in your repository secrets! Go to your repository on GitHub ➡️ **Settings** ➡️ **Secrets and variables** ➡️ **Actions**, click **New repository secret**, and save your credentials under `GEMINI_API_KEY` or `BRIEFED_API_KEY`.</p>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Neo-Brutalist Footer -->
+  <footer class="main-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-text">BRIEFED CLI</span>
+        <p class="brand-sub">The background AI context synchronization engine.</p>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">RESOURCE MAP</h4>
+        <a href="index.html#how-it-works" class="footer-link">Engine Architecture</a>
+        <a href="index.html#simulator" class="footer-link">Live Hook Simulator</a>
+        <a href="index.html#config-grid" class="footer-link">Configuration Dashboard</a>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">DEVELOPER</h4>
+        <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="footer-link">GitHub Repository</a>
+        <a href="https://www.npmjs.com/package/briefed" target="_blank" class="footer-link">npm Package</a>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <p class="copy-text">© 2026 Briefed CLI. Released under the MIT License.</p>
+      <div class="footer-console-prompt">admin@briefed-shell:~$ <span class="blinking-footer-block">■</span></div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
