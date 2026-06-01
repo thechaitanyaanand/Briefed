@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { DEFAULT_CONFIG, resolveTargetFile, getConfig } from '../config.js';
+
+vi.mock('os', async (importOriginal) => {
+  const original = await importOriginal<typeof import('os')>();
+  return {
+    ...original,
+    homedir: () => process.env.FAKE_HOMEDIR || original.homedir(),
+  };
+});
 
 const TEST_DIR = path.resolve(__dirname, '../../temp_config_test');
 
@@ -11,13 +20,20 @@ describe('config.ts', () => {
       fs.rmSync(TEST_DIR, { recursive: true, force: true });
     }
     fs.mkdirSync(TEST_DIR, { recursive: true });
+
+    // Create the fake-home directory for global config isolation
+    const fakeHome = path.join(TEST_DIR, 'fake-home');
+    fs.mkdirSync(fakeHome, { recursive: true });
+    process.env.FAKE_HOMEDIR = fakeHome;
   });
 
   afterEach(() => {
     if (fs.existsSync(TEST_DIR)) {
       fs.rmSync(TEST_DIR, { recursive: true, force: true });
     }
+    delete process.env.FAKE_HOMEDIR;
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   describe('DEFAULT_CONFIG', () => {
@@ -143,6 +159,67 @@ describe('config.ts', () => {
       it('should be undefined if neither config file nor environment variables have a key', () => {
         const config = getConfig(TEST_DIR);
         expect(config.apiKey).toBeUndefined();
+      });
+    });
+
+    describe('Three-tiered configuration merging', () => {
+      it('should priority-merge in order: System Defaults -> Global Config -> Local Config', () => {
+        const fakeHome = path.join(TEST_DIR, 'fake-home');
+
+        // 1. Setup global configuration (~/.briefed.json)
+        const globalConfig = {
+          backend: 'anthropic',      // Overrides system default ('ollama')
+          model: 'claude-3-5-sonnet', // Overrides system default ('llama3')
+          minDiffLines: 15,          // Overrides system default (10)
+          window: {
+            days: 14                 // Overrides system default (7)
+          }
+        };
+        fs.writeFileSync(path.join(fakeHome, '.briefed.json'), JSON.stringify(globalConfig));
+
+        // 2. Setup local configuration (.briefed.json in local test dir)
+        const localConfig = {
+          model: 'claude-3-opus',    // Overrides global config ('claude-3-5-sonnet')
+          window: {
+            entries: 50              // Overrides system default (10) while preserving global's days (14)
+          }
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(localConfig));
+
+        // Get config passing local TEST_DIR
+        const config = getConfig(TEST_DIR);
+
+        // Assertions:
+        // - backend: overridden by global config to 'anthropic' (local does not specify, default is 'ollama')
+        expect(config.backend).toBe('anthropic');
+        // - model: overridden by local config to 'claude-3-opus' (overrides global's 'claude-3-5-sonnet')
+        expect(config.model).toBe('claude-3-opus');
+        // - minDiffLines: overridden by global config to 15
+        expect(config.minDiffLines).toBe(15);
+        // - window.days: overridden by global to 14
+        expect(config.window.days).toBe(14);
+        // - window.entries: overridden by local to 50
+        expect(config.window.entries).toBe(50);
+      });
+
+      it('should gracefully handle missing or malformed global config', () => {
+        const fakeHome = path.join(TEST_DIR, 'fake-home');
+
+        // Write a malformed global config
+        fs.writeFileSync(path.join(fakeHome, '.briefed.json'), '{ malformed json ');
+
+        // Setup a valid local configuration
+        const localConfig = {
+          backend: 'gemini',
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(localConfig));
+
+        const config = getConfig(TEST_DIR);
+
+        // Should fallback to defaults for anything not in localConfig, and successfully load localConfig
+        expect(config.backend).toBe('gemini');
+        expect(config.model).toBe('gemini-2.5-flash'); // gemini default since no model is set
+        expect(config.minDiffLines).toBe(10); // default
       });
     });
 

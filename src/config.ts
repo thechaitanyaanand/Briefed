@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { BriefedConfig } from './types.js';
 
@@ -72,24 +73,37 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Record<stri
  */
 export function getConfig(cwd?: string): BriefedConfig {
   const actualCwd = cwd || process.cwd();
-  const configPath = path.resolve(actualCwd, '.briefed.json');
 
-  let userConfig: any = {};
-  if (fs.existsSync(configPath)) {
+  // Start with built-in DEFAULT_CONFIG
+  let merged: BriefedConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
+  // Global configuration file: ~/.briefed.json
+  const globalConfigPath = path.join(os.homedir(), '.briefed.json');
+  let globalConfig: any = {};
+  if (fs.existsSync(globalConfigPath)) {
     try {
-      const content = fs.readFileSync(configPath, 'utf-8');
-      userConfig = JSON.parse(content);
+      const content = fs.readFileSync(globalConfigPath, 'utf-8');
+      globalConfig = JSON.parse(content);
     } catch (e) {
-      // If invalid/malformed JSON, fallback to default config merge
-      userConfig = {};
+      // If invalid/malformed JSON, fallback to empty object
+      globalConfig = {};
     }
   }
+  merged = deepMerge(merged, globalConfig);
 
-  // Perform deep merge
-  const merged: BriefedConfig = deepMerge(
-    JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
-    userConfig
-  );
+  // Local configuration file: .briefed.json in cwd
+  const localConfigPath = path.resolve(actualCwd, '.briefed.json');
+  let localConfig: any = {};
+  if (fs.existsSync(localConfigPath)) {
+    try {
+      const content = fs.readFileSync(localConfigPath, 'utf-8');
+      localConfig = JSON.parse(content);
+    } catch (e) {
+      // If invalid/malformed JSON, fallback to empty object
+      localConfig = {};
+    }
+  }
+  merged = deepMerge(merged, localConfig);
 
   // Target path resolution
   if (merged.target === 'auto') {
@@ -99,7 +113,7 @@ export function getConfig(cwd?: string): BriefedConfig {
   }
 
   // Model resolution for Gemini backend
-  if (merged.backend === 'gemini' && (!userConfig.model || merged.model === 'llama3')) {
+  if (merged.backend === 'gemini' && (!localConfig.model && !globalConfig.model || merged.model === 'llama3')) {
     merged.model = 'gemini-2.5-flash';
   }
 
