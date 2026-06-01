@@ -214,7 +214,7 @@ program
         cfg.target = path.resolve(process.cwd(), options.target);
       }
 
-      const diff = getDiff(undefined, cfg.ignored, options.verbose);
+      const diff = getDiff(undefined, cfg.ignored, options.verbose, cfg.target);
 
       if (diff.isEmpty) {
         console.log(chalk.gray('· No new commits or changes detected.'));
