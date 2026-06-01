@@ -7,16 +7,16 @@ describe('CLI Integration Tests', () => {
 
   it('should display the custom Help & Configuration Guide', () => {
     const output = execSync(`node ${cliPath} --help`, { encoding: 'utf-8' });
-    
-    expect(output).toContain('HELP & CONFIGURATION GUIDE');
-    expect(output).toContain('Environment Keys:');
-    expect(output).toContain('BRIEFED_API_KEY');
+
+    expect(output).toContain('BRIEFED -- QUICK SETUP');
+    expect(output).toContain('STEP 1 -- Install globally');
+    expect(output).toContain('STEP 2 -- Set up each repo');
+    expect(output).toContain('briefed init');
+    expect(output).toContain('briefed run');
     expect(output).toContain('GEMINI_API_KEY');
     expect(output).toContain('ANTHROPIC_API_KEY');
-    expect(output).toContain('Fallback Mechanics:');
-    expect(output).toContain('none');
-    expect(output).toContain('Config File Blueprint:');
     expect(output).toContain('.briefed.json');
+    expect(output).toContain('Configure your LLM backend');
   });
 
   it('should accept override options in "run" command', () => {
