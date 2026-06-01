@@ -10,7 +10,8 @@ export const DEFAULT_CONFIG: BriefedConfig = {
   apiUrl: 'http://localhost:11434',
   window: { days: 7, entries: 10 },
   ignored: ['*.lock', 'dist/', '*.map', '*.min.js', '*.min.css'],
-  minDiffLines: 10
+  minDiffLines: 10,
+  maxSummaryWords: 150
 };
 
 /**

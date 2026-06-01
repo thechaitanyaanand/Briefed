@@ -7,11 +7,11 @@ vi.mock('child_process', async () => {
   const actual = await vi.importActual<typeof child_process>('child_process');
   return {
     ...actual,
-    execSync: vi.fn(),
+    execFileSync: vi.fn(),
   };
 });
 
-const mockExecSync = vi.mocked(child_process.execSync);
+const mockExecFileSync = vi.mocked(child_process.execFileSync);
 
 describe('git.ts', () => {
   let mockGitResponses: Record<string, string | Error> = {};
@@ -20,12 +20,13 @@ describe('git.ts', () => {
     vi.resetAllMocks();
     mockGitResponses = {};
 
-    mockExecSync.mockImplementation((command) => {
-      const cmd = String(command);
+    mockExecFileSync.mockImplementation((_cmd, args) => {
+      // Reconstruct key from args array for pattern matching
+      const argsStr = (args as string[]).join(' ');
       // Sort patterns by length descending so longer, more specific patterns match first
       const sortedPatterns = Object.keys(mockGitResponses).sort((a, b) => b.length - a.length);
       for (const pattern of sortedPatterns) {
-        if (cmd.includes(pattern)) {
+        if (argsStr.includes(pattern)) {
           const response = mockGitResponses[pattern];
           if (response instanceof Error) {
             throw response;
@@ -33,7 +34,7 @@ describe('git.ts', () => {
           return response;
         }
       }
-      throw new Error(`Unhandled command in mockExecSync: ${cmd}`);
+      throw new Error(`Unhandled command in mockExecFileSync: git ${argsStr}`);
     });
   });
 
@@ -44,7 +45,7 @@ describe('git.ts', () => {
       };
       const hash = getCurrentHash();
       expect(hash).toBe('abcdef1234567890');
-      expect(mockExecSync).toHaveBeenCalledWith('git rev-parse HEAD', expect.any(Object));
+      expect(mockExecFileSync).toHaveBeenCalledWith('git', ['rev-parse', 'HEAD'], expect.any(Object));
     });
 
     it('should return an empty string if git command fails', () => {
@@ -57,9 +58,18 @@ describe('git.ts', () => {
   });
 
   describe('getDiff', () => {
-    it('should return the fallback empty DiffResult if rev-parse HEAD fails', () => {
+    it('should throw an error when not in a Git repository', () => {
       mockGitResponses = {
-        'rev-parse HEAD': new Error('Not a git repository'),
+        'rev-parse --is-inside-work-tree': new Error('Not a git repository'),
+      };
+
+      expect(() => getDiff()).toThrow('Not a Git repository');
+    });
+
+    it('should return the fallback empty DiffResult if rev-parse HEAD fails (no commits)', () => {
+      mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
+        'rev-parse HEAD': new Error('unknown revision HEAD'),
       };
 
       const result = getDiff();
@@ -76,6 +86,7 @@ describe('git.ts', () => {
 
     it('should return the fallback empty DiffResult if ORIG_HEAD and all fallbacks fail', () => {
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': new Error('ambiguous argument \'ORIG_HEAD\''),
         'diff HEAD~1 HEAD --numstat': new Error('no parent commit'),
@@ -96,6 +107,7 @@ describe('git.ts', () => {
 
     it('should fallback to HEAD~1 if ORIG_HEAD is missing', () => {
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': new Error('ambiguous argument \'ORIG_HEAD\''),
         'diff HEAD~1 HEAD --numstat': '5\t2\tsrc/git.ts\n',
@@ -114,6 +126,7 @@ describe('git.ts', () => {
 
     it('should fallback to empty tree hash if ORIG_HEAD and HEAD~1 are missing', () => {
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': new Error('ambiguous argument \'ORIG_HEAD\''),
         'diff HEAD~1 HEAD --numstat': new Error('no parent commit'),
@@ -133,6 +146,7 @@ describe('git.ts', () => {
 
     it('should parse numstat and raw diff successfully', () => {
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/git.ts\n2\t0\tpackage.json\n-\t-\tassets/logo.png\n0\t1\tREADME.md\n',
         'diff ORIG_HEAD HEAD': 'diff details here\n',
@@ -158,6 +172,7 @@ describe('git.ts', () => {
 
     it('should handle ignore patterns correctly', () => {
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/git.ts\n2\t0\tpackage.json\n5\t5\tcustom_ignored/temp.txt\n20\t10\tcustom_ignored/nested/file.js\n0\t1\tREADME.md\n',
         'diff ORIG_HEAD HEAD': 'diff details here\n',
@@ -179,6 +194,7 @@ describe('git.ts', () => {
 
     it('should handle rename syntax correctly in parseGitPath', () => {
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/{auth => security}/login.ts\n1\t1\tutils.ts => helpers.ts\n',
         'diff ORIG_HEAD HEAD': 'diff details\n',
@@ -202,6 +218,7 @@ describe('git.ts', () => {
       const longDiffWithLines = `${veryLongDiff}\n${lines}`;
 
       mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
         'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/git.ts\n',
         'diff ORIG_HEAD HEAD --stat': 'src/git.ts | 15 +++++-----\n1 file changed, 10 insertions(+), 5 deletions(-)\n',

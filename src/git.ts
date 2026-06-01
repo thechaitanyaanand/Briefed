@@ -1,18 +1,31 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { minimatch } from 'minimatch';
 import { DiffResult } from './types.js';
 
 /**
- * Runs a git command synchronously, handling potential errors and setting the environment.
+ * Runs a git command synchronously using execFileSync to avoid shell injection.
+ * Arguments are passed as an array directly to the git binary.
  */
 function runGit(args: string[], cwd?: string): string {
-  const cmd = `git ${args.join(' ')}`;
-  return execSync(cmd, {
+  return execFileSync('git', args, {
     cwd,
     env: { ...process.env, PAGER: 'cat' },
     encoding: 'utf8',
-    stdio: ['pipe', 'pipe', 'pipe'], // Capture stderr as well, don't inherit it
+    stdio: ['pipe', 'pipe', 'pipe'],
   }).trim();
+}
+
+/**
+ * Checks if the given directory is inside a Git repository.
+ * Returns true if `git rev-parse --is-inside-work-tree` succeeds.
+ */
+function isGitRepository(cwd?: string): boolean {
+  try {
+    const result = runGit(['rev-parse', '--is-inside-work-tree'], cwd);
+    return result === 'true';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -76,6 +89,13 @@ function isIgnored(filePath: string, ignored: string[] = []): boolean {
  * Returns an empty DiffResult if ORIG_HEAD is missing or any error occurs.
  */
 export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean): DiffResult {
+  // UX-03: Explicit check — throw clear error if not in a Git repository
+  if (!isGitRepository(cwd)) {
+    throw new Error(
+      'Not a Git repository. Run this command from inside a Git project, or run "git init" first.'
+    );
+  }
+
   const fallbackResult: DiffResult = {
     files: [],
     filesByDir: {},
@@ -90,7 +110,7 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean): Di
   try {
     commitHash = runGit(['rev-parse', 'HEAD'], cwd);
   } catch (error) {
-    // If not a git repository or no commit has been made yet
+    // No commits yet in this repository
     return fallbackResult;
   }
 

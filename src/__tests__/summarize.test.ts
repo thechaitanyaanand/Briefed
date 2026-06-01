@@ -289,11 +289,12 @@ describe('summarize.ts', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const call = mockFetch.mock.calls[0];
-      expect(call[0]).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=gemini-test-key');
+      expect(call[0]).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
       const options = call[1];
       expect(options.method).toBe('POST');
       expect(options.headers).toEqual({
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-goog-api-key': 'gemini-test-key'
       });
       const body = JSON.parse(options.body);
       expect(body.contents[0].parts[0].text).toContain('Summarize the following git diff.');

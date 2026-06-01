@@ -62,6 +62,13 @@ export interface BriefedConfig {
    * it will skip the LLM and use mechanical summary to save tokens/time.
    */
   minDiffLines?: number;
+
+  /**
+   * Maximum number of words allowed in an LLM-generated summary.
+   * LLM responses exceeding this limit are truncated at the last complete line boundary.
+   * Defaults to 150.
+   */
+  maxSummaryWords?: number;
 }
 
 /**

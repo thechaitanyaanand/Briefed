@@ -3,6 +3,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
+import { createRequire } from 'module';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { getConfig } from './config.js';
@@ -12,12 +13,15 @@ import { writeEntry, getLastEntry } from './writer.js';
 import { install, uninstall } from './hook.js';
 import { BriefedConfig, ContextEntry, DiffResult } from './types.js';
 
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
+
 const program = new Command();
 
 program
   .name('briefed')
   .description('AI-powered git summary and project context synchronizer')
-  .version('0.1.0');
+  .version(pkg.version);
 
 // Beautiful custom Help formatting & Configuration Guide
 const helpText = `
@@ -60,6 +64,10 @@ ${chalk.bold.magenta('==========================================================
 program.addHelpText('after', helpText);
 
 function askQuestion(query: string): Promise<string> {
+  // NEW-04: Guard against non-TTY stdin (CI, piped input, redirected stdin)
+  if (!process.stdin.isTTY) {
+    return Promise.resolve('');
+  }
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -68,6 +76,9 @@ function askQuestion(query: string): Promise<string> {
     rl.question(query, (answer) => {
       rl.close();
       resolve(answer.trim());
+    });
+    rl.on('close', () => {
+      resolve('');
     });
   });
 }
@@ -115,13 +126,30 @@ program
 
       const result = install();
       const cfg = getConfig();
-      console.log(chalk.green('✓ Hooks installed successfully'));
-      console.log(chalk.green(`✓ Target context file resolved: ${cfg.target}`));
+
+      // Show detailed hook installation results
+      if (result.installed.length > 0) {
+        console.log(chalk.green(`✓ Hooks installed: ${result.installed.join(', ')}`));
+      }
+      if (result.skipped.length > 0) {
+        console.log(chalk.gray(`· Hooks already present (skipped): ${result.skipped.join(', ')}`));
+      }
+      console.log(chalk.green(`✓ Target context file: ${cfg.target}`));
+
       if (result.warnings && result.warnings.length > 0) {
         for (const warning of result.warnings) {
-          console.log(chalk.yellow(`Warning: ${warning}`));
+          console.log(chalk.yellow(`  ⚠ ${warning}`));
         }
       }
+
+      // UX-01: Next steps guide
+      console.log('');
+      console.log(chalk.bold.cyan('Next Steps:'));
+      console.log(chalk.white(`  1. Add ${chalk.yellow(path.basename(cfg.target))} to version control:`));
+      console.log(chalk.gray(`     git add ${path.basename(cfg.target)} .briefed.json`));
+      console.log(chalk.white(`  2. Run ${chalk.yellow('briefed run')} to manually trigger a context sync.`));
+      console.log(chalk.white(`  3. Pull or merge changes — Briefed updates automatically via hooks.`));
+      console.log(chalk.white(`  4. Run ${chalk.yellow('briefed config')} to inspect your resolved configuration.`));
     } catch (error: any) {
       console.error(chalk.red(`Error: ${error?.message || error}`));
       process.exit(1);
@@ -139,10 +167,44 @@ program
     const startTime = Date.now();
     try {
       const cfg = getConfig();
+      // UX-08: Smart model mismatch auto-resolution on backend override
+      const DEFAULT_MODELS: Record<string, string> = {
+        ollama: 'llama3',
+        anthropic: 'claude-sonnet-4-20250514',
+        gemini: 'gemini-2.5-flash',
+        none: 'none',
+      };
+      const MODEL_PREFIXES: Record<string, string[]> = {
+        ollama: ['llama', 'mistral', 'codellama', 'deepseek', 'phi', 'gemma', 'qwen'],
+        anthropic: ['claude'],
+        gemini: ['gemini'],
+      };
+
+      // NEW-10: Validate backend value
+      const VALID_BACKENDS = ['ollama', 'anthropic', 'gemini', 'none'];
       if (options.backend) {
+        if (!VALID_BACKENDS.includes(options.backend)) {
+          console.error(chalk.red(`Error: Invalid backend "${options.backend}". Valid options: ${VALID_BACKENDS.join(', ')}`));
+          process.exit(1);
+        }
         cfg.backend = options.backend;
-        if (options.backend === 'gemini' && (!options.model && cfg.model === 'llama3')) {
-          cfg.model = 'gemini-2.5-flash';
+
+        if (!options.model && cfg.backend !== 'none') {
+          // Check if the current model belongs to a different backend
+          const currentModel = cfg.model.toLowerCase();
+          const belongsToOverride = MODEL_PREFIXES[cfg.backend]?.some(
+            (prefix) => currentModel.startsWith(prefix)
+          );
+
+          if (!belongsToOverride) {
+            const resolved = DEFAULT_MODELS[cfg.backend] || cfg.model;
+            console.log(
+              chalk.yellow(
+                `Warning: Model "${cfg.model}" does not match backend "${cfg.backend}". Auto-resolving to "${resolved}".`
+              )
+            );
+            cfg.model = resolved;
+          }
         }
       }
       if (options.model) {
@@ -150,13 +212,6 @@ program
       }
       if (options.target) {
         cfg.target = path.resolve(process.cwd(), options.target);
-      }
-      if (options.backend) {
-        if (cfg.backend === 'gemini') {
-          cfg.apiKey = cfg.apiKey || process.env.GEMINI_API_KEY || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY || undefined;
-        } else {
-          cfg.apiKey = cfg.apiKey || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY || undefined;
-        }
       }
 
       const diff = getDiff(undefined, cfg.ignored, options.verbose);

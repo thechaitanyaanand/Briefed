@@ -52,9 +52,42 @@ function enforceWordLimit(text: string, maxWords: number = 150): string {
 }
 
 /**
- * Constructs the prompt template for LLM summarization.
+ * SEC-04: Scrubs common secret patterns from diff text before sending to cloud APIs.
+ * Detects API keys, tokens, passwords, AWS credentials, private keys, and connection strings.
  */
-function constructPrompt(diff: DiffResult): string {
+function scrubSecrets(text: string): string {
+  const patterns: [RegExp, string][] = [
+    // Generic API keys and tokens (long hex/base64 strings assigned to key-like variables)
+    [/((?:api[_-]?key|api[_-]?secret|auth[_-]?token|access[_-]?token|secret[_-]?key|private[_-]?key|password|passwd|pwd)\s*[:=]\s*)["']?[A-Za-z0-9+/=_\-]{16,}["']?/gi, '$1[REDACTED]'],
+    // AWS access keys (AKIA...)
+    [/AKIA[A-Z0-9]{16}/g, '[REDACTED_AWS_KEY]'],
+    // AWS secret keys (40-char base64)
+    [/(aws[_-]?secret[_-]?access[_-]?key\s*[:=]\s*)["']?[A-Za-z0-9+/=]{40}["']?/gi, '$1[REDACTED]'],
+    // Generic bearer tokens
+    [/(Bearer\s+)[A-Za-z0-9._\-+/=]{20,}/gi, '$1[REDACTED]'],
+    // GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)
+    [/gh[pousr]_[A-Za-z0-9_]{36,}/g, '[REDACTED_GH_TOKEN]'],
+    // npm tokens
+    [/npm_[A-Za-z0-9]{36,}/g, '[REDACTED_NPM_TOKEN]'],
+    // PEM private keys
+    [/-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA )?PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]'],
+    // Connection strings with passwords
+    [/((?:mongodb|postgres|mysql|redis|amqp|mssql)(?:\+srv)?:\/\/[^:]+:)[^@]+(@)/gi, '$1[REDACTED]$2'],
+  ];
+
+  let scrubbed = text;
+  for (const [pattern, replacement] of patterns) {
+    scrubbed = scrubbed.replace(pattern, replacement);
+  }
+  return scrubbed;
+}
+
+/**
+ * Constructs the prompt template for LLM summarization.
+ * If scrub is true, applies secret scrubbing to the diff before including it.
+ */
+function constructPrompt(diff: DiffResult, scrub: boolean = false): string {
+  const rawDiff = scrub ? scrubSecrets(diff.rawDiff) : diff.rawDiff;
   return `Summarize the following git diff.
 You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
 Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
@@ -67,7 +100,7 @@ RENAMED: <files renamed, e.g. path/to/old -> path/to/new, separated by |>
 DEPS: <dependency changes or change counts, e.g., "X additions, Y deletions">
 
 Git Diff:
-${diff.rawDiff}
+${rawDiff}
 
 List of changed files:
 ${diff.files.join('\n')}
@@ -124,7 +157,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
   let backendUsed: 'ollama' | 'anthropic' | 'gemini' | 'none' = config.backend;
 
   try {
-    const prompt = constructPrompt(diff);
+    const prompt = constructPrompt(diff, config.backend !== 'ollama');
 
     if (config.backend === 'ollama') {
       const apiUrl = config.apiUrl || 'http://localhost:11434';
@@ -188,10 +221,11 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
         throw new Error('Gemini API key is not configured');
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
         },
         body: JSON.stringify({
           contents: [{
@@ -220,8 +254,9 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
       throw new Error(`Unknown backend: ${config.backend}`);
     }
 
-    // 4. Word-Count Enforcement (response > 150 words)
-    summary = enforceWordLimit(summary, 150);
+    // PROD-05: Configurable word-count enforcement
+    const maxWords = config.maxSummaryWords ?? 150;
+    summary = enforceWordLimit(summary, maxWords);
     summary = summary.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;');
 
   } catch (error: any) {
