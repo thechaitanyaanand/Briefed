@@ -3,9 +3,14 @@
 Managed by Briefed.
 
 <!-- BRIEFED_START -->
+## [2026-06-01T20:49:22.966Z] adf7c75b87b1d32b867c4141849e72ff0fb79e3f (master)
+FILES: .github/ (briefed-context.yml) | ./ (LICENSE, README.md, package.json)
+DEPS: 60 insertions, 18 deletions
+
 ## [2026-06-01T20:42:54.366Z] a39875e27714e8a471e625cc5d0009f2c2f918b3 (master)
-FILES: ./ (.gitignore)
 DEPS: 1 insertions, 0 deletions
+
+FILES: ./, (.gitignore)
 
 ## [2026-06-01T19:47:44.245Z] 2f1353321453ea758e4f34d9ddd3acd6b608a309 (master)
 DEPS: 90 insertions, 490 deletions
