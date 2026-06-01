@@ -2,7 +2,83 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // ==========================================
-  // 1. CUSTOM RETRO BLOCKY CURSOR
+  // 1. RETRO 8-BIT SOUND CARD SYNTHESIZER (Web Audio API)
+  // ==========================================
+  let soundEnabled = false;
+  const speakerToggleBtn = document.getElementById('speaker-toggle-btn');
+
+  if (speakerToggleBtn) {
+    speakerToggleBtn.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      if (soundEnabled) {
+        speakerToggleBtn.textContent = '🔊 SOUND: ON';
+        speakerToggleBtn.style.backgroundColor = 'var(--neon-green)';
+        speakerToggleBtn.style.color = 'var(--pure-black)';
+        speakerToggleBtn.style.borderColor = 'var(--pure-black)';
+        playSynthSound('success');
+      } else {
+        speakerToggleBtn.textContent = '🔊 SOUND: OFF';
+        speakerToggleBtn.style.backgroundColor = 'var(--bg-card)';
+        speakerToggleBtn.style.color = 'var(--pure-white)';
+        speakerToggleBtn.style.borderColor = '#333';
+      }
+    });
+  }
+
+  function playSynthSound(type) {
+    if (!soundEnabled) return;
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      const now = audioCtx.currentTime;
+      
+      if (type === 'click') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(850, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'slide') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(580, now + 0.12);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } else if (type === 'success') {
+        // Double pitch chirp
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.setValueAtTime(780, now + 0.06);
+        osc.frequency.setValueAtTime(1100, now + 0.12);
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.002, now + 0.18);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } else if (type === 'type') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(650, now);
+        gain.gain.setValueAtTime(0.025, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+        osc.start(now);
+        osc.stop(now + 0.025);
+      }
+    } catch (err) {
+      // AudioContext blocks handled gracefully
+    }
+  }
+
+
+  // ==========================================
+  // 2. CUSTOM RETRO BLOCKY CURSOR
   // ==========================================
   const cursor = document.getElementById('custom-cursor');
   let cursorX = 0;
@@ -37,11 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     item.addEventListener('mouseleave', () => {
       if (cursor) cursor.classList.remove('hovering');
     });
+    item.addEventListener('click', () => {
+      playSynthSound('click');
+    });
   });
 
 
   // ==========================================
-  // 2. HERO TERMINAL TYPING ANIMATION
+  // 3. HERO TERMINAL TYPING ANIMATION
   // ==========================================
   const typedSpan = document.getElementById('terminal-typed-text');
   const outputBlock = document.getElementById('terminal-output');
@@ -51,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let typeIndex = 0;
 
   const logs = [
-    { text: '✓ Git post-merge and post-rewrite hook hooks resolved successfully.', type: 'success', delay: 400 },
+    { text: '✓ Git post-merge and post-rewrite hooks resolved successfully.', type: 'success', delay: 400 },
     { text: '✓ Scanning workspace directories... Resolved hook target: CLAUDE.md', type: 'success', delay: 300 },
     { text: '  - Injecting Briefed core post-merge script inside .git/hooks/', type: 'gray', delay: 200 },
     { text: '✓ Config merger successfully initialized and saved to .briefed.json', type: 'success', delay: 400 },
@@ -68,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typedSpan && typeIndex < textToType.length) {
       typedSpan.textContent += textToType.charAt(typeIndex);
       typeIndex++;
+      playSynthSound('type');
       setTimeout(typeChar, 70 + Math.random() * 40);
     } else {
       if (terminalCursor) terminalCursor.style.display = 'none';
@@ -89,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lineDiv.textContent = log.text;
       outputBlock.appendChild(lineDiv);
       logIndex++;
+      playSynthSound('click');
       setTimeout(triggerOutput, log.delay);
     }
   }
@@ -97,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ==========================================
-  // 3. COPY INSTALL COMMAND INTERACTION
+  // 4. COPY INSTALL COMMAND INTERACTION
   // ==========================================
   const installBtn = document.getElementById('install-copy-btn');
   const ctaBtn = document.getElementById('cta-install-btn');
@@ -108,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.clipboard.writeText(textToCopy).then(() => {
       if (tooltip) {
         tooltip.style.display = 'block';
+        playSynthSound('success');
         setTimeout(() => {
           tooltip.style.display = 'none';
         }, 2000);
@@ -120,37 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ==========================================
-  // 4. FLOPPY DISK SHUTTER SLIDE INTERACTION
-  // ==========================================
-  const floppyCards = document.querySelectorAll('.floppy-card');
-  floppyCards.forEach(card => {
-    const metalShutter = card.querySelector('.shutter-metal');
-    
-    card.addEventListener('mouseenter', () => {
-      if (metalShutter) {
-        metalShutter.style.transform = 'translateX(60px)';
-        metalShutter.style.transition = 'transform 0.2s ease-out';
-      }
-    });
-
-    card.addEventListener('mouseleave', () => {
-      if (metalShutter) {
-        metalShutter.style.transform = 'translateX(0px)';
-      }
-    });
-
-    card.addEventListener('click', () => {
-      const protectNotch = card.querySelector('.notch-slider');
-      if (protectNotch) {
-        const isNotched = protectNotch.style.transform === 'translateY(-6px)';
-        protectNotch.style.transform = isNotched ? 'translateY(0px)' : 'translateY(-6px)';
-        protectNotch.style.transition = 'transform 0.1s ease';
-      }
-    });
-  });
-
-
-  // ==========================================
   // 5. LIVE SIMULATOR SYSTEM (Toggles, Custom editor, Tab routing)
   // ==========================================
   
@@ -160,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const simPanePresets = document.getElementById('sim-pane-presets');
   const simPaneCustom = document.getElementById('sim-pane-custom');
 
-  let activeInputTab = 'presets'; // 'presets' | 'custom'
+  let activeInputTab = 'presets';
 
   if (simBtnPresets && simBtnCustom) {
     simBtnPresets.addEventListener('click', () => {
@@ -169,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (simPanePresets) simPanePresets.classList.add('active');
       if (simPaneCustom) simPaneCustom.classList.remove('active');
       activeInputTab = 'presets';
+      playSynthSound('click');
       renderSimulatorOutput();
     });
 
@@ -178,38 +230,48 @@ document.addEventListener('DOMContentLoaded', () => {
       if (simPaneCustom) simPaneCustom.classList.add('active');
       if (simPanePresets) simPanePresets.classList.remove('active');
       activeInputTab = 'custom';
+      playSynthSound('click');
       renderSimulatorOutput();
     });
   }
 
-  // Output Tabs Routing - CLAUDE.md vs Terminal Output
+  // Output Tabs Routing - CLAUDE.md vs Terminal Output vs IDE Agent Memory
   const btnOutClaude = document.getElementById('btn-out-claude');
   const btnOutTerminal = document.getElementById('btn-out-terminal');
+  const btnOutAgent = document.getElementById('btn-out-agent');
+  
   const paneOutClaude = document.getElementById('sim-out-pane-claude');
   const paneOutTerminal = document.getElementById('sim-out-pane-terminal');
+  const paneOutAgent = document.getElementById('sim-out-pane-agent');
 
-  if (btnOutClaude && btnOutTerminal) {
-    btnOutClaude.addEventListener('click', () => {
-      btnOutClaude.classList.add('active');
-      btnOutTerminal.classList.remove('active');
-      if (paneOutClaude) paneOutClaude.classList.add('active');
-      if (paneOutTerminal) paneOutTerminal.classList.remove('active');
-    });
+  const outTabs = [
+    { btn: btnOutClaude, pane: paneOutClaude },
+    { btn: btnOutTerminal, pane: paneOutTerminal },
+    { btn: btnOutAgent, pane: paneOutAgent }
+  ];
 
-    btnOutTerminal.addEventListener('click', () => {
-      btnOutTerminal.classList.add('active');
-      btnOutClaude.classList.remove('active');
-      if (paneOutTerminal) paneOutTerminal.classList.add('active');
-      if (paneOutClaude) paneOutClaude.classList.remove('active');
-    });
-  }
+  outTabs.forEach(t => {
+    if (t.btn) {
+      t.btn.addEventListener('click', () => {
+        outTabs.forEach(ot => {
+          if (ot.btn) ot.btn.classList.remove('active');
+          if (ot.pane) ot.pane.classList.remove('active');
+        });
+        t.btn.classList.add('active');
+        if (t.pane) t.pane.classList.add('active');
+        playSynthSound('click');
+      });
+    }
+  });
 
   // Preset switch controls
   const toggleAuth = document.getElementById('toggle-auth');
   const toggleDeps = document.getElementById('toggle-deps');
   const toggleBugfix = document.getElementById('toggle-bugfix');
+  
   const simOutput = document.getElementById('simulator-output-pre');
   const simTerminalPre = document.getElementById('simulator-terminal-pre');
+  const simAgentChat = document.getElementById('simulator-agent-chat');
 
   const switches = [
     { btn: toggleAuth, id: 'auth', active: true },
@@ -224,9 +286,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sw.active) {
           sw.btn.classList.add('active');
           sw.btn.textContent = 'ON';
+          playSynthSound('success');
         } else {
           sw.btn.classList.remove('active');
           sw.btn.textContent = 'OFF';
+          playSynthSound('click');
         }
         renderSimulatorOutput();
       });
@@ -239,15 +303,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnRunCustomSim) {
     btnRunCustomSim.addEventListener('click', () => {
+      playSynthSound('success');
       renderSimulatorOutput();
-      // Auto-switch output pane to CLAUDE.md to show update
       if (btnOutClaude) btnOutClaude.click();
     });
   }
 
-  // The core simulator logic
+  // Simulator core renderer
   function renderSimulatorOutput() {
-    if (!simOutput || !simTerminalPre) return;
+    if (!simOutput || !simTerminalPre || !simAgentChat) return;
 
     if (activeInputTab === 'custom') {
       simulateCustomDiffOutput();
@@ -264,6 +328,15 @@ document.addEventListener('DOMContentLoaded', () => {
       simTerminalPre.textContent = `admin@briefed-shell:~$ briefed run --verbose\n` +
                                    `[briefed] Checking changes between ORIG_HEAD and HEAD...\n` +
                                    `[briefed] No files modified. Skipping summary execution. ⚡`;
+      
+      simAgentChat.innerHTML = `
+        <div class="agent-msg-box">
+          <div class="agent-msg-meta">Cursor v3.8 • Model: claude-3-5-sonnet • Context: CLAUDE.md</div>
+          <div class="agent-msg-text">
+            I scanned your context files. The repository seems to have no recent merge changes. I stand ready to edit the project! Just tell me what files you need designed.
+          </div>
+        </div>
+      `;
       return;
     }
 
@@ -276,8 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let deletions = 0;
     let summaryText = '';
 
-    const linesOfCode = [];
-    
     if (isAuth) {
       branchName = 'feature/auth-oauth2';
       hash = 'e8b39a1';
@@ -368,6 +439,41 @@ FILES: ${files.join(', ')}
                    `[briefed] Released write lock. Sync finished successfully! ✅\n`;
 
     simTerminalPre.textContent = terminalLog;
+
+    // Compile the IDE Agent chat log dynamically
+    let agentFeedback = `I read the updated \`CLAUDE.md\` context logs compiled by Briefed hook. Merged commit **${hash}** was successfully digested:`;
+    
+    if (isAuth) {
+      agentFeedback += `<div class="agent-msg-update">
+        OAuth2 token handling has been introduced in src/auth.ts, along with TokenTypes in src/types.ts.<br>
+        ➔ <b>My Coding Action:</b> For any future coding or endpoint addition requests, I will strictly invoke these secure, pre-configured OAuth session wrappers and consume TokenTypes interfaces, ensuring I never write deprecated raw cookie session code.
+      </div>`;
+    }
+
+    if (isDeps) {
+      agentFeedback += `<div class="agent-msg-update">
+        Vitest testing framework is now registered as our target test runner, and chalk has been added.<br>
+        ➔ <b>My Coding Action:</b> I will construct all new unit tests inside the src/__tests__/ folder using Vitest's import syntax (describe/expect/test) instead of Jest, and utilize chalk to print colored diagnostics in bash scripts.
+      </div>`;
+    }
+
+    if (isBugfix) {
+      agentFeedback += `<div class="agent-msg-update">
+        Windows CRLF Carriage Returns are resolved; Unix LF line-endings are forced in hook.ts.<br>
+        ➔ <b>My Coding Action:</b> When generating or editing shell script payloads, I will strictly format them with Unix line endings (\\n) so they never fail in developer Git Bash shells on Windows.
+      </div>`;
+    }
+
+    simAgentChat.innerHTML = `
+      <div class="agent-msg-box">
+        <div class="agent-msg-meta">Cursor v3.8 • Model: claude-3-5-sonnet • Context: CLAUDE.md</div>
+        <div class="agent-msg-text">
+          ${agentFeedback}
+          <br>
+          My memory has been updated seamlessly. I am aligned and ready to code!
+        </div>
+      </div>
+    `;
   }
 
   // Parse and simulate custom diff entry compilation
@@ -438,9 +544,16 @@ FILES: ${displayFiles}
                       `[briefed] Accumulating total code lines: +${additionsCount} insertions, -${deletionsCount} deletions.\n` +
                       `[briefed] Threshold verification: ${totalDiffLines} lines modified (minDiffLines limit: ${limitLines})\n`;
 
+    let agentFeedback = '';
+
     if (totalDiffLines < limitLines) {
       terminalLog += `[briefed] ⚠ Total changes (${totalDiffLines} lines) fall below minDiffLines limit (${limitLines}).\n` +
                      `[briefed] Skipping LLM request to conserve tokens! Instantly compiled mechanical folder groupings.\n`;
+      agentFeedback = `I read the updated \`CLAUDE.md\` logs. The changes were small (under ${limitLines} lines changed) and processed mechanically:
+        <div class="agent-msg-update">
+          Detected file structural updates to: ${displayFiles}<br>
+          ➔ <b>My Coding Action:</b> I have scanned and parsed the modifications. Since they were minor refactors, I will reference these adjusted directories but keep our main design templates unchanged.
+        </div>`;
     } else if (containsSecrets) {
       terminalLog += `[briefed] 🛡️ CRITICAL SECURITY ALERT: Exposed keys detected in local code buffer!\n`;
       scrubbedCredentials.forEach(cred => {
@@ -454,6 +567,12 @@ FILES: ${displayFiles}
         terminalLog += `[briefed] Contacting LLM service backend (${activeBackend}) using model: default...\n` +
                        `[briefed] Context parsed. LLM summary returned in 0.42s.\n`;
       }
+      
+      agentFeedback = `Excellent! I noticed that Briefed automatically scrubbed exposed secrets from your Git diff before compiling context logs.
+        <div class="agent-msg-update">
+          Exposure Masked: Database credentials or Google API keys were flagged and scrubbed.<br>
+          ➔ <b>My Coding Action:</b> I am fully aware of the new PG Pool configuration in src/db.ts. I will write database queries using this PG Pool object in environment variables, and I will strictly avoid committing plain text password strings!
+        </div>`;
     } else {
       if (activeBackend === 'none') {
         terminalLog += `[briefed] Backend set to NONE. Running mechanical sync parser.\n`;
@@ -461,6 +580,12 @@ FILES: ${displayFiles}
         terminalLog += `[briefed] Contacting LLM service backend (${activeBackend})...\n` +
                        `[briefed] Context parsed. LLM summary returned in 0.29s.\n`;
       }
+      
+      agentFeedback = `I scanned the updated \`CLAUDE.md\` logs compiled by Briefed from your custom diff:
+        <div class="agent-msg-update">
+          Changed Files: ${displayFiles}<br>
+          ➔ <b>My Coding Action:</b> I have adjusted my project context maps. I am fully aware of these custom directory changes and will use them for all subsequent code generation requests.
+        </div>`;
     }
 
     terminalLog += `[briefed] Acquiring write lock file: CLAUDE.md.lock\n` +
@@ -469,6 +594,17 @@ FILES: ${displayFiles}
                    `[briefed] Released write lock. Sync finished successfully! ✅\n`;
 
     simTerminalPre.textContent = terminalLog;
+
+    simAgentChat.innerHTML = `
+      <div class="agent-msg-box">
+        <div class="agent-msg-meta">Cursor v3.8 • Model: claude-3-5-sonnet • Context: CLAUDE.md</div>
+        <div class="agent-msg-text">
+          ${agentFeedback}
+          <br>
+          My memory has been updated seamlessly. I am aligned and ready to code!
+        </div>
+      </div>
+    `;
   }
 
   // Initial simulator render
@@ -523,6 +659,7 @@ FILES: ${displayFiles}
           }
         }
       });
+      playSynthSound('click');
       syncConfigDashboard();
     });
   }
@@ -548,6 +685,7 @@ FILES: ${displayFiles}
       } else {
         currentConfig.model = 'llama3';
       }
+      playSynthSound('success');
       syncConfigDashboard();
     });
   });
@@ -562,10 +700,14 @@ FILES: ${displayFiles}
   if (faderHandle && faderTrack) {
     faderHandle.addEventListener('mousedown', () => {
       isDraggingFader = true;
+      playSynthSound('click');
     });
 
     document.addEventListener('mouseup', () => {
-      isDraggingFader = false;
+      if (isDraggingFader) {
+        isDraggingFader = false;
+        playSynthSound('success');
+      }
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -581,6 +723,10 @@ FILES: ${displayFiles}
       const days = Math.round(1 + pct * 29);
       if (daysReadout) daysReadout.textContent = `${days} Days`;
       currentConfig.window.days = days;
+      
+      // Throttle slide clicking sound
+      if (days % 3 === 0) playSynthSound('type');
+      
       syncConfigDashboard();
     });
   }
@@ -594,7 +740,12 @@ FILES: ${displayFiles}
       const val = parseInt(e.target.value);
       if (linesReadout) linesReadout.textContent = `${val} Lines`;
       currentConfig.minDiffLines = val;
+      playSynthSound('type');
       syncConfigDashboard();
+    });
+    
+    minDiffSlider.addEventListener('change', () => {
+      playSynthSound('success');
     });
   }
 
@@ -610,6 +761,7 @@ FILES: ${displayFiles}
       btnTabShell.classList.remove('active');
       if (telemetryContentJson) telemetryContentJson.classList.add('active');
       if (telemetryContentShell) telemetryContentShell.classList.remove('active');
+      playSynthSound('click');
     });
 
     btnTabShell.addEventListener('click', () => {
@@ -617,6 +769,7 @@ FILES: ${displayFiles}
       btnTabJson.classList.remove('active');
       if (telemetryContentShell) telemetryContentShell.classList.add('active');
       if (telemetryContentJson) telemetryContentJson.classList.remove('active');
+      playSynthSound('click');
     });
   }
 
@@ -703,6 +856,9 @@ FILES: ${displayFiles}
           executeTerminalCommand(cmd);
           terminalInput.value = '';
         }
+      } else {
+        // Play subtle keystroke clicks
+        if (Math.random() > 0.3) playSynthSound('type');
       }
     });
   }
@@ -719,14 +875,17 @@ FILES: ${displayFiles}
                  `  briefed run      - Manually trigger post-merge diff checks and compile context.\n` +
                  `  briefed init     - Verify Git hook integrations in the active folder.\n` +
                  `  clear            - Clear command line terminal history.`;
+      playSynthSound('success');
     } else if (cleanCmd === 'briefed config') {
       response = JSON.stringify(currentConfig, null, 2);
+      playSynthSound('success');
     } else if (cleanCmd === 'briefed status') {
       const today = new Date().toISOString().split('T')[0];
       response = `Target File: CLAUDE.md (823 bytes)\n` +
                  `Last Entry Date: ${today}\n` +
                  `Last Commit:     c97f2ab (custom-diff-run)\n` +
                  `Status:          Context perfectly aligned with git history ✅`;
+      playSynthSound('success');
     } else if (cleanCmd === 'briefed run') {
       const limitLines = currentConfig.minDiffLines;
       response = `[briefed] Computing differences between ORIG_HEAD and HEAD...\n` +
@@ -737,6 +896,7 @@ FILES: ${displayFiles}
                  `[briefed] Sending to LLM backend (${currentConfig.backend}) using model: ${currentConfig.model}...\n` +
                  `[briefed] LLM response gathered. Writing atomic update to CLAUDE.md...\n` +
                  `[briefed] Released write lock. Sync finished successfully! ✅`;
+      playSynthSound('success');
     } else if (cleanCmd === 'briefed init') {
       response = `[briefed] Verifying local git repository directories...\n` +
                  `[briefed] Found .git/hooks directory.\n` +
@@ -744,11 +904,14 @@ FILES: ${displayFiles}
                  `[briefed] Registering post-rewrite hook script inside .git/hooks/post-rewrite\n` +
                  `[briefed] ⚠ Forcing standard Unix LF line-endings on all hook scripts.\n` +
                  `[briefed] Init complete! Briefed background hooks successfully installed. ⚡`;
+      playSynthSound('success');
     } else if (cleanCmd === 'clear') {
       terminalHistory.innerHTML = '';
+      playSynthSound('click');
       return;
     } else {
       response = `sh: command not found: ${cmd}\nType 'help' to see list of valid Briefed subcommands.`;
+      playSynthSound('click');
     }
 
     // Append to terminal history log

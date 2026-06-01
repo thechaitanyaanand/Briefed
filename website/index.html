@@ -44,6 +44,7 @@
       <a href="#simulator" class="nav-link">LIVE SIMULATOR</a>
       <a href="#config-grid" class="nav-link">CONFIGURATION</a>
       <a href="getting-started.html" class="nav-link">DOCUMENTATION</a>
+      <button class="header-btn" id="speaker-toggle-btn" style="background-color: var(--bg-card); color: var(--pure-white); border-color: #333;">🔊 SOUND: OFF</button>
       <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="nav-btn-link">
         <button class="header-btn" id="github-btn">GITHUB</button>
       </a>
@@ -283,6 +284,7 @@
             <div class="sim-output-tabs">
               <button class="sim-out-tab-btn active" id="btn-out-claude">CLAUDE.md (CONTEXT)</button>
               <button class="sim-out-tab-btn" id="btn-out-terminal">CLI RUN LOGS</button>
+              <button class="sim-out-tab-btn" id="btn-out-agent">🤖 IDE AGENT MEMORY</button>
             </div>
             <div class="terminal-tab green-tab">Sync Active</div>
           </div>
@@ -294,6 +296,10 @@
             <!-- Out Tab B: Verbose CLI Execution logs -->
             <div class="sim-out-pane" id="sim-out-pane-terminal">
               <pre class="terminal-pre" id="simulator-terminal-pre"></pre>
+            </div>
+            <!-- Out Tab C: IDE Agent feedback loop -->
+            <div class="sim-out-pane" id="sim-out-pane-agent">
+              <div class="agent-memory-chat" id="simulator-agent-chat"></div>
             </div>
           </div>
         </div>

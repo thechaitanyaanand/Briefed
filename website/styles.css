@@ -1756,3 +1756,59 @@ body {
   }
 }
 
+/* ==========================================
+   AGENT VISUAL CHAT VIEW STYLES
+   ========================================== */
+.agent-memory-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 10px;
+}
+
+.agent-msg-box {
+  background-color: #0b0b0d;
+  border: 2px solid #202025;
+  padding: 16px;
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 3px 3px 0px #000;
+}
+
+.agent-msg-box::before {
+  content: "🤖 IDE ASSISTANT CORE (MEMORY Mapped)";
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--neon-violet);
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.agent-msg-meta {
+  font-size: 11px;
+  color: var(--gray-text);
+  margin-bottom: 12px;
+  border-bottom: 1px solid #1a1a20;
+  padding-bottom: 8px;
+}
+
+.agent-msg-text {
+  font-size: 13px;
+  color: var(--pure-white);
+  line-height: 1.6;
+}
+
+.agent-msg-update {
+  background-color: #121216;
+  border-left: 3px solid var(--neon-green);
+  padding: 12px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--neon-green);
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+
