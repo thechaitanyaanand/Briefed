@@ -145,5 +145,96 @@ describe('config.ts', () => {
         expect(config.apiKey).toBeUndefined();
       });
     });
+
+    describe('Gemini backend configuration', () => {
+      it('should default model to gemini-2.5-flash when backend is gemini and model is default llama3', () => {
+        const userConfig = {
+          backend: 'gemini',
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+        const config = getConfig(TEST_DIR);
+        expect(config.backend).toBe('gemini');
+        expect(config.model).toBe('gemini-2.5-flash');
+      });
+
+      it('should respect custom model for gemini if specified in user config', () => {
+        const userConfig = {
+          backend: 'gemini',
+          model: 'gemini-1.5-pro'
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+        const config = getConfig(TEST_DIR);
+        expect(config.backend).toBe('gemini');
+        expect(config.model).toBe('gemini-1.5-pro');
+      });
+
+      describe('API Key Resolution Priority for Gemini', () => {
+        it('should prioritize API key from config file over GEMINI_API_KEY environment variable', () => {
+          vi.stubEnv('GEMINI_API_KEY', 'env-gemini-key');
+          vi.stubEnv('BRIEFED_API_KEY', 'env-briefed-key');
+          vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
+
+          const userConfig = {
+            backend: 'gemini',
+            apiKey: 'config-key',
+          };
+          fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+          const config = getConfig(TEST_DIR);
+          expect(config.apiKey).toBe('config-key');
+        });
+
+        it('should prioritize GEMINI_API_KEY over BRIEFED_API_KEY and ANTHROPIC_API_KEY if key not in config file', () => {
+          vi.stubEnv('GEMINI_API_KEY', 'env-gemini-key');
+          vi.stubEnv('BRIEFED_API_KEY', 'env-briefed-key');
+          vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
+
+          const userConfig = {
+            backend: 'gemini',
+          };
+          fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+          const config = getConfig(TEST_DIR);
+          expect(config.apiKey).toBe('env-gemini-key');
+        });
+
+        it('should fallback to BRIEFED_API_KEY if GEMINI_API_KEY is not defined', () => {
+          vi.stubEnv('BRIEFED_API_KEY', 'env-briefed-key');
+          vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
+
+          const userConfig = {
+            backend: 'gemini',
+          };
+          fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+          const config = getConfig(TEST_DIR);
+          expect(config.apiKey).toBe('env-briefed-key');
+        });
+
+        it('should fallback to ANTHROPIC_API_KEY if GEMINI_API_KEY and BRIEFED_API_KEY are not defined', () => {
+          vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
+
+          const userConfig = {
+            backend: 'gemini',
+          };
+          fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+          const config = getConfig(TEST_DIR);
+          expect(config.apiKey).toBe('env-anthropic-key');
+        });
+
+        it('should be undefined if neither config file nor any environment variables have a key', () => {
+          const userConfig = {
+            backend: 'gemini',
+          };
+          fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+          const config = getConfig(TEST_DIR);
+          expect(config.apiKey).toBeUndefined();
+        });
+      });
+    });
   });
 });

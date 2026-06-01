@@ -27,9 +27,10 @@ export interface BriefedConfig {
    * The summarization backend to use.
    * - 'ollama': Local LLM backend.
    * - 'anthropic': Cloud LLM backend.
+   * - 'gemini': Google Gemini API backend.
    * - 'none': Mechanical fallback (dir groupings and add/delete counts only).
    */
-  backend: 'ollama' | 'anthropic' | 'none';
+  backend: 'ollama' | 'anthropic' | 'gemini' | 'none';
 
   /**
    * The model name to use for the selected backend (e.g., 'llama3', 'claude-sonnet-4-20250514').
@@ -165,7 +166,7 @@ export interface SummarizeOutput {
   /**
    * The actual backend used (could differ from config backend in case of dynamic fallback).
    */
-  backendUsed: 'ollama' | 'anthropic' | 'none';
+  backendUsed: 'ollama' | 'anthropic' | 'gemini' | 'none';
 
   /**
    * True if the diff was below the line threshold and LLM summarization was skipped.

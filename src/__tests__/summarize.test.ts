@@ -249,6 +249,58 @@ describe('summarize.ts', () => {
     });
   });
 
+  describe('Gemini Backend', () => {
+    it('should make correct POST request to Gemini and return summary', async () => {
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        deletions: 0,
+        isEmpty: false
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{ text: 'Gemini custom summary output' }]
+            }
+          }]
+        })
+      });
+
+      const input: SummarizeInput = {
+        diff,
+        config: {
+          ...defaultConfig,
+          backend: 'gemini',
+          model: 'gemini-2.5-flash',
+          apiKey: 'gemini-test-key'
+        }
+      };
+
+      const output = await summarize(input);
+
+      expect(output.skippedLLM).toBe(false);
+      expect(output.backendUsed).toBe('gemini');
+      expect(output.entry.summary).toBe('Gemini custom summary output');
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const call = mockFetch.mock.calls[0];
+      expect(call[0]).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=gemini-test-key');
+      const options = call[1];
+      expect(options.method).toBe('POST');
+      expect(options.headers).toEqual({
+        'Content-Type': 'application/json'
+      });
+      const body = JSON.parse(options.body);
+      expect(body.contents[0].parts[0].text).toContain('Summarize the following git diff.');
+      expect(body.generationConfig).toEqual({ maxOutputTokens: 200 });
+    });
+  });
+
   describe('Error Fallback', () => {
     it('should log a console warning and fallback to mechanical summary if Ollama API fails', async () => {
       const diff: DiffResult = {
@@ -308,6 +360,76 @@ describe('summarize.ts', () => {
       } finally {
         process.env.ANTHROPIC_API_KEY = originalApiKey;
         process.env.BRIEFED_API_KEY = originalBriefedKey;
+      }
+    });
+
+    it('should log a console warning and fallback to mechanical summary if Gemini API fails', async () => {
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        deletions: 0,
+        isEmpty: false
+      };
+
+      mockFetch.mockRejectedValueOnce(new Error('Gemini offline'));
+
+      const input: SummarizeInput = {
+        diff,
+        config: {
+          ...defaultConfig,
+          backend: 'gemini',
+          model: 'gemini-2.5-flash',
+          apiKey: 'gemini-test-key'
+        }
+      };
+
+      const output = await summarize(input);
+
+      expect(output.backendUsed).toBe('none');
+      expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 15 insertions, 0 deletions');
+      expect(mockConsoleWarn).toHaveBeenCalled();
+    });
+
+    it('should fallback to mechanical summary if Gemini API key is missing', async () => {
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        deletions: 0,
+        isEmpty: false
+      };
+
+      const input: SummarizeInput = {
+        diff,
+        config: {
+          ...defaultConfig,
+          backend: 'gemini',
+          model: 'gemini-2.5-flash',
+          apiKey: undefined
+        }
+      };
+
+      // Ensure env vars are also empty
+      const originalGeminiKey = process.env.GEMINI_API_KEY;
+      const originalBriefedKey = process.env.BRIEFED_API_KEY;
+      const originalAnthropicKey = process.env.ANTHROPIC_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.BRIEFED_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+
+      try {
+        const output = await summarize(input);
+
+        expect(output.backendUsed).toBe('none');
+        expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 15 insertions, 0 deletions');
+        expect(mockConsoleWarn).toHaveBeenCalled();
+      } finally {
+        process.env.GEMINI_API_KEY = originalGeminiKey;
+        process.env.BRIEFED_API_KEY = originalBriefedKey;
+        process.env.ANTHROPIC_API_KEY = originalAnthropicKey;
       }
     });
   });

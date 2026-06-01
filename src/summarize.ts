@@ -121,7 +121,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
 
   // 3. Otherwise try LLM Backends
   let summary = '';
-  let backendUsed: 'ollama' | 'anthropic' | 'none' = config.backend;
+  let backendUsed: 'ollama' | 'anthropic' | 'gemini' | 'none' = config.backend;
 
   try {
     const prompt = constructPrompt(diff);
@@ -180,6 +180,40 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
       const text = data.content?.[0]?.text;
       if (typeof text !== 'string') {
         throw new Error('Invalid Anthropic response format');
+      }
+      summary = text.trim();
+    } else if (config.backend === 'gemini') {
+      const apiKey = config.apiKey || process.env.GEMINI_API_KEY || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error('Gemini API key is not configured');
+      }
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            maxOutputTokens: 200
+          }
+        }),
+        signal: AbortSignal.timeout(15000)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as any;
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (typeof text !== 'string') {
+        throw new Error('Invalid Gemini response format');
       }
       summary = text.trim();
     } else {

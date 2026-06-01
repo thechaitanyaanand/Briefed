@@ -98,8 +98,17 @@ export function getConfig(cwd?: string): BriefedConfig {
     merged.target = path.resolve(actualCwd, merged.target);
   }
 
+  // Model resolution for Gemini backend
+  if (merged.backend === 'gemini' && (!userConfig.model || merged.model === 'llama3')) {
+    merged.model = 'gemini-2.5-flash';
+  }
+
   // API Key resolution
-  merged.apiKey = merged.apiKey || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY || undefined;
+  if (merged.backend === 'gemini') {
+    merged.apiKey = merged.apiKey || process.env.GEMINI_API_KEY || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY || undefined;
+  } else {
+    merged.apiKey = merged.apiKey || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY || undefined;
+  }
 
   return merged;
 }
