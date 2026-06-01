@@ -19,7 +19,7 @@
     <div class="marquee-wrapper-top">
       <div class="marquee-content-top">
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
-        <span>⚡ VERSION 0.9.0-BETA.1 IS LIVE! ⚡</span>
+        <span>⚡ VERSION 0.9.0-BETA.2 IS LIVE! ⚡</span>
         <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
       </div>
@@ -132,6 +132,41 @@
           <div class="callout-title">🛡️ Automated Secret Scrubbing</div>
           <p class="callout-body">Briefed protects your security! Before sending diffs to cloud APIs (Gemini or Anthropic), it runs client-side regex detection filters to mask keys, database passwords, AWS credentials, bearer tokens, and GitHub SSH keys, ensuring secrets are never leaked to external networks.</p>
         </div>
+
+        <h2>🤖 Core LLM Summarization Prompt</h2>
+        <p>Briefed maintains full transparency. To ensure your AI backends respond in a standardized, parseable format without conversational fluff or markdown enclosures, Briefed runs the exact structured template below:</p>
+        <pre><code>Summarize the following git diff.
+You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
+Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
+
+Format:
+FILES: &lt;comma-separated list of directories/files changed&gt;
+ADDED: &lt;key features, modules or code additions, separated by |&gt;
+REMOVED: &lt;key removals or deprecations, separated by |&gt;
+RENAMED: &lt;files renamed, e.g. path/to/old -&gt; path/to/new, separated by |&gt;
+DEPS: &lt;dependency changes or change counts, e.g., "X additions, Y deletions"&gt;
+
+Git Diff:
+&lt;rawDiff&gt;
+
+List of changed files:
+&lt;listOfFilesChanged&gt;
+
+Change Statistics:
+Additions: &lt;additionsCount&gt;
+Deletions: &lt;deletionsCount&gt;</code></pre>
+
+        <h2>🔌 Auto-Injected AI Skill Guidelines</h2>
+        <p>Briefed makes sure your AI coding assistants (like <strong>Claude Code</strong> or <strong>Antigravity</strong>) are immediately aware of the sync workflow without any manual instruction writing. When Briefed dynamically creates your context file (e.g. <code>CLAUDE.md</code>), it automatically prefixes the file with the following concise, high-value **AI Skill Guidelines**:</p>
+        <pre><code># AI Context
+
+## Briefed CLI Guidelines
+- Run `briefed run` to manually synchronize git context or review change stats.
+- Run `briefed status` to inspect the latest summarized entry.
+- Do not manually edit the `&lt;!-- BRIEFED_START --&gt;` block; the post-merge and post-rewrite hooks handle it automatically.
+
+&lt;!-- BRIEFED_START --&gt;
+&lt;!-- BRIEFED_END --&gt;</code></pre>
       </article>
 
     </div>
