@@ -243,7 +243,7 @@ describe('summarize.ts', () => {
       });
       const body = JSON.parse(options.body);
       expect(body.model).toBe('claude-3-opus');
-      expect(body.max_tokens).toBe(200);
+      expect(body.max_tokens).toBe(1000);
       expect(body.messages[0].role).toBe('user');
       expect(body.messages[0].content).toContain('Summarize the following git diff.');
     });
@@ -298,7 +298,7 @@ describe('summarize.ts', () => {
       });
       const body = JSON.parse(options.body);
       expect(body.contents[0].parts[0].text).toContain('Summarize the following git diff.');
-      expect(body.generationConfig).toEqual({ maxOutputTokens: 200 });
+      expect(body.generationConfig).toEqual({ maxOutputTokens: 2000 });
     });
   });
 

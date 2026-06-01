@@ -199,7 +199,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
         },
         body: JSON.stringify({
           model: config.model,
-          max_tokens: 200,
+          max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
         }),
         signal: AbortSignal.timeout(15000)
@@ -234,7 +234,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
             }]
           }],
           generationConfig: {
-            maxOutputTokens: 200
+            maxOutputTokens: 2000
           }
         }),
         signal: AbortSignal.timeout(15000)
