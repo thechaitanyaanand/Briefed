@@ -26,40 +26,77 @@ program
 // Beautiful custom Help formatting & Configuration Guide
 const helpText = `
 ${chalk.bold.magenta('================================================================================')}
-${chalk.bold.magenta('                       HELP & CONFIGURATION GUIDE                               ')}
+${chalk.bold.magenta('                          BRIEFED -- QUICK SETUP                               ')}
 ${chalk.bold.magenta('================================================================================')}
 
-${chalk.bold.cyan('Environment Keys:')}
-  To authenticate cloud LLM backends, set one of the following environment variables:
-  - ${chalk.yellow('BRIEFED_API_KEY')}    : Unified key for Anthropic or Gemini.
-  - ${chalk.yellow('ANTHROPIC_API_KEY')}  : Key specifically for the Anthropic Claude API.
-  - ${chalk.yellow('GEMINI_API_KEY')}     : Key specifically for the Google Gemini API.
+${chalk.bold.white('How it works:')}
+  Briefed installs Git hooks into any repo. After a ${chalk.yellow('git pull')} or ${chalk.yellow('git merge')},
+  the hook runs automatically -- diffs what changed, summarizes it with an LLM
+  (or mechanical fallback), and appends a structured entry to your context file
+  (${chalk.cyan('CLAUDE.md')}, ${chalk.cyan('AGENTS.md')}, or ${chalk.cyan('.github/copilot-instructions.md')}).
+  Your AI coding tool reads that file and stays in sync -- no manual context dumps.
 
-${chalk.bold.cyan('Fallback Mechanics:')}
-  If a selected LLM backend fails (e.g. network timeout, missing API keys) or if
-  the diff is very small, Briefed automatically falls back to the zero-config ${chalk.yellow('none')}
-  backend. The ${chalk.yellow('none')} backend provides a fast, mechanical summary containing
-  directory groupings and line insertions/deletions statistics without hitting any API.
+${chalk.bold.cyan('STEP 1 -- Install globally (once)')}
+  ${chalk.gray('$')} ${chalk.green('npm install -g briefed-cli')}
 
-${chalk.bold.cyan('Config File Blueprint:')}
-  You can customize Briefed by creating a ${chalk.yellow('.briefed.json')} file in your project
-  root directory. Here is an example configuration blueprint:
+${chalk.bold.cyan('STEP 2 -- Set up each repo you want to track (run inside the repo root)')}
+  ${chalk.gray('$')} ${chalk.green('briefed init')}
+  This installs the post-merge and post-rewrite hooks into ${chalk.yellow('.git/hooks/')}.
+  If you use Husky, it appends to ${chalk.yellow('.husky/')} instead.
+  Run ${chalk.green('briefed init --interactive')} to configure backend and target file.
+
+${chalk.bold.cyan('STEP 3 -- Test it right now')}
+  ${chalk.gray('$')} ${chalk.green('briefed run')}
+  Manually trigger a diff against the last commit and write an entry.
+  Use ${chalk.yellow('--verbose')} to see exactly what it is doing.
+
+${chalk.bold.cyan('STEP 4 -- From now on, it is automatic')}
+  Every ${chalk.yellow('git pull')} / ${chalk.yellow('git merge')} / ${chalk.yellow('git rebase')} fires the hook silently in the background.
+  Your context file updates itself. Open Cursor or Claude -- already in sync.
+
+${chalk.bold.magenta('================================================================================')}
+${chalk.bold.white('Configure your LLM backend:')}
+${chalk.bold.magenta('================================================================================')}
+
+${chalk.bold.cyan('No LLM (default -- no setup needed):')}
+  Works out of the box. Uses directory groupings and line stats. Fast and free.
+  ${chalk.gray('"backend": "none"')}
+
+${chalk.bold.cyan('Google Gemini (recommended cloud backend):')}
+  ${chalk.gray('$')} ${chalk.green('export GEMINI_API_KEY="your-key"')}   ${chalk.gray('# or add to ~/.briefed.json')}
+  ${chalk.gray('"backend": "gemini", "model": "gemini-2.5-flash"')}
+
+${chalk.bold.cyan('Anthropic Claude:')}
+  ${chalk.gray('$')} ${chalk.green('export ANTHROPIC_API_KEY="your-key"')}
+  ${chalk.gray('"backend": "anthropic", "model": "claude-3-5-sonnet-20241022"')}
+
+${chalk.bold.cyan('Ollama (local, fully offline):')}
+  ${chalk.gray('$')} ${chalk.green('ollama pull llama3')}
+  ${chalk.gray('"backend": "ollama", "model": "llama3"')}
+
+${chalk.bold.magenta('================================================================================')}
+${chalk.bold.white('Global config  ->  ~/.briefed.json   (applies to all repos on your machine)')}
+${chalk.bold.white('Per-repo config -> .briefed.json    (add to .gitignore if it has an apiKey)')}
+${chalk.bold.magenta('================================================================================')}
 
   ${chalk.gray('{')}
-    ${chalk.cyan('"target"')}: ${chalk.green('"auto"')},
-    ${chalk.cyan('"backend"')}: ${chalk.green('"ollama"')},
-    ${chalk.cyan('"model"')}: ${chalk.green('"llama3"')},
-    ${chalk.cyan('"apiUrl"')}: ${chalk.green('"http://localhost:11434"')},
-    ${chalk.cyan('"window"')}: ${chalk.gray('{')}
-      ${chalk.cyan('"days"')}: ${chalk.yellow('7')},
-      ${chalk.cyan('"entries"')}: ${chalk.yellow('10')}
-    ${chalk.gray('}')},
+    ${chalk.cyan('"backend"')}: ${chalk.green('"gemini"')},
+    ${chalk.cyan('"model"')}: ${chalk.green('"gemini-2.5-flash"')},
+    ${chalk.cyan('"apiKey"')}: ${chalk.green('"your-api-key"')},          ${chalk.gray('# store in ~/.briefed.json, not in repo')}
+    ${chalk.cyan('"window"')}: ${chalk.gray('{')} ${chalk.cyan('"days"')}: ${chalk.yellow('7')}, ${chalk.cyan('"entries"')}: ${chalk.yellow('10')} ${chalk.gray('}')},
     ${chalk.cyan('"ignored"')}: ${chalk.gray('[')}${chalk.green('"*.lock"')}, ${chalk.green('"dist/"')}${chalk.gray(']')},
     ${chalk.cyan('"minDiffLines"')}: ${chalk.yellow('10')}
   ${chalk.gray('}')}
 
+${chalk.bold.yellow('Optional -- CI/CD (GitHub Actions):')}
+  Only needed if your team merges PRs via GitHub web UI and wants the context
+  file committed back to the repo centrally.
+  See: ${chalk.cyan('https://thechaitanyaanand.github.io/Briefed/ci-cd.html')}
+  For most developers using local Briefed installs, CI is not needed.
+
 ${chalk.bold.magenta('================================================================================')}
 `;
+
 
 program.addHelpText('after', helpText);
 

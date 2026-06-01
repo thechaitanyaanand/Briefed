@@ -62,25 +62,25 @@
         <p>Briefed bridges the AI latency context gap for developers by automatically summarizing code diffs and keeping context logs up-to-date in target files like CLAUDE.md. This ensures your AI pair programmer (Cursor, Windsurf, Claude Dev) is always synced with recent pulled, merged, or rebased edits in the background.</p>
 
         <h2>📦 1. Installation</h2>
-        <p>Install Briefed globally to run it across any repository on your local computer, or add it to your local project dependency list:</p>
-        <pre><code># Install globally (Recommended for CLI)
-npm install -g briefed
-
-# OR install locally inside your project folder
-npm install --save-dev briefed</code></pre>
+        <p>Install Briefed globally once — then run <code>briefed init</code> inside any repo you want to track. You only install once, set up per-repo.</p>
+        <pre><code># Install globally (do this once)
+npm install -g briefed-cli</code></pre>
 
         <h2>⚙️ 2. Hooks Initialization</h2>
-        <p>Once installed, navigate to the root directory of your Git repository and register the background Git hooks:</p>
-        <pre><code># Default initialization (Installs hooks automatically)
+        <p>Navigate to the root directory of any Git repository you want to track, then run:</p>
+        <pre><code># Navigate into your project repo first
+cd /path/to/your-repo
+
+# Install hooks into this repo
 briefed init
 
-# Interactive setup wizard (Highly Recommended)
+# Or use the interactive setup wizard (sets backend, target file)
 briefed init --interactive</code></pre>
-        <p>This command checks if Husky is active. If Husky is present, it registers in <code>.husky/post-merge</code> and <code>.husky/post-rewrite</code>. If Husky is absent, it creates or appends to standard <code>.git/hooks/post-merge</code> and <code>.git/hooks/post-rewrite</code> scripts.</p>
+        <p>This installs <code>post-merge</code> and <code>post-rewrite</code> hooks into <code>.git/hooks/</code>. If you use Husky, it appends into <code>.husky/</code> instead. <strong>Repeat this step for every repo you want Briefed to track.</strong> The global install means you only install the CLI once.</p>
 
-        <div class="brutal-callout callout-yellow">
-          <div class="callout-title">⚠️ Windows CRLF hook safety</div>
-          <p class="callout-body">Windows carriage returns can corrupt hook files, throwing command interpreter syntax errors inside Git Bash. Briefed resolves this by automatically sanitizing and forcing standard Unix LF (<code>\n</code>) line-endings on all hook files on all platforms.</p>
+        <div class="brutal-callout callout-green">
+          <div class="callout-title">✅ What happens after init</div>
+          <p class="callout-body">Every time you run <code>git pull</code>, <code>git merge</code>, or <code>git rebase</code>, the hook fires silently in the background. It diffs what changed, summarizes it (via your configured LLM or the built-in mechanical fallback), and appends a structured entry to your context file. Your AI coding tool reads that file automatically — no manual context dumping needed.</p>
         </div>
 
         <h2>🔑 3. Setting API Keys</h2>
@@ -108,11 +108,15 @@ set GEMINI_API_KEY=your-google-studio-api-key</code></pre>
         <p>Place `.briefed.json` directly in your repository root directory. Make sure you add <code>.briefed.json</code> to your <code>.gitignore</code> file to prevent leaking secrets on Git repositories.</p>
 
         <h2>🚀 4. Triggering Your First Sync</h2>
-        <p>To test and manually execute a synchronizer diff check and generate LLM context entries inside your active target file, run the command:</p>
+        <p>To manually trigger a diff and write your first context entry, run:</p>
         <pre><code>briefed run</code></pre>
-        <p>Use the verbose flag to inspect compilation diagnostics, diff lines, model auto-resolutions, and elapsed time statistics:</p>
+        <p>Use <code>--verbose</code> to inspect exactly what it's doing — which files changed, which backend was used, and how long it took:</p>
         <pre><code>briefed run --verbose</code></pre>
-      </article>
+
+        <div class="brutal-callout callout-yellow">
+          <div class="callout-title">💡 CI/CD is optional</div>
+          <p class="callout-body">Briefed works <strong>locally via Git hooks</strong> — that's the primary mechanism. GitHub Actions is only useful if your team merges PRs through the GitHub web UI and wants the context file committed back to the repo centrally. For most developers using Briefed locally, CI setup is not needed. See the <a href="ci-cd.html">CI/CD Integration guide</a> if you need it.</p>
+        </div>
 
     </div>
   </main>

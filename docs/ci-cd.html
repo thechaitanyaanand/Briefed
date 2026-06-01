@@ -59,17 +59,29 @@
       <!-- Right-hand main content -->
       <article class="docs-content-card">
         <h1>04. CI/CD INTEGRATION</h1>
-        <p>In collaborative team environments, developers often merge Pull Requests directly through the GitHub web user interface. Since local Git hooks do not run during online merges, your repository context files (like CLAUDE.md) can slowly fall out of alignment.</p>
-        <p>To resolve this, deploy Briefed directly in your CI/CD pipelines. This ensures that every direct push or merge to your main branches automatically triggers a context compilation check and commits updates immediately back to repository files.</p>
 
-        <h2>🐙 Complete GitHub Action Blueprint</h2>
-        <p>Create a file named <code>.github/workflows/briefed.yml</code> inside your project directory and paste the following workflow script:</p>
+        <div class="brutal-callout callout-yellow">
+          <div class="callout-title">⚠️ This is optional — most users don't need it</div>
+          <p class="callout-body">Briefed's primary mechanism is <strong>local Git hooks</strong>. Every time you run <code>git pull</code> or <code>git merge</code> on your machine, the hook fires and updates your context file automatically. <strong>CI/CD is only needed for a specific team scenario described below.</strong></p>
+        </div>
+
+        <h2>🤔 When do you need CI/CD?</h2>
+        <p>You need the GitHub Actions workflow <em>only if all of these are true</em>:</p>
+        <ul>
+          <li>Your team merges Pull Requests <strong>through the GitHub web UI</strong> (not via local git merge)</li>
+          <li>You want <code>CLAUDE.md</code> (or your context file) <strong>committed back to the repo</strong> so teammates see the updated context without pulling first</li>
+          <li>Not all teammates have Briefed installed locally</li>
+        </ul>
+        <p>If you merge PRs locally (git pull → git merge), the post-merge hook already handles everything. <strong>No CI needed.</strong></p>
+
+        <h2>🐙 GitHub Actions Blueprint</h2>
+        <p>Create <code>.github/workflows/briefed.yml</code> in your project:</p>
         <pre><code>name: Briefed Context Update
 
 on:
   push:
     branches:
-      - main  # Adjust this to match your default branch name
+      - main  # Adjust to your default branch
 
 permissions:
   contents: write
@@ -81,53 +93,55 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Compares previous commit (HEAD^) with current commit (HEAD)
+          fetch-depth: 2  # Need parent commit to diff against
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
+      - name: Install Briefed
+        run: npm install -g briefed-cli
 
       - name: Set ORIG_HEAD manually
         run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
 
       - name: Run briefed
-        run: node dist/cli.js run
+        run: briefed run
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: Check and commit context changes
+      - name: Commit context changes
         run: |
-          if ! git diff --quiet CLAUDE.md; then
+          # Detects whichever context file briefed updated (CLAUDE.md, AGENTS.md, etc.)
+          CHANGED=$(git diff --name-only | grep -E '^(CLAUDE\.md|AGENTS\.md|\.github/copilot-instructions\.md)$' | head -1)
+          if [ -n "$CHANGED" ]; then
             git config --local user.name "github-actions[bot]"
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git add CLAUDE.md
+            git add "$CHANGED"
             git commit -m "Update AI context [skip ci]"
             git push
           fi</code></pre>
 
-        <h2>⚙️ Critical Setup Explanations</h2>
-        
+        <h2>⚙️ What each step does</h2>
+
         <h3>1. <code>fetch-depth: 2</code></h3>
-        <p>By default, the GitHub Checkout action performs a shallow fetch (depth of 1) to optimize build speed. Briefed needs to compare commits to generate the summary logs, so you must configure <code>fetch-depth: 2</code> to fetch the latest commit and its immediate parent.</p>
+        <p>GitHub's default checkout only fetches the latest commit (depth 1). Briefed needs to compare the current commit against its parent, so <code>fetch-depth: 2</code> is required.</p>
 
-        <h3>2. <code>git update-ref ORIG_HEAD $(git rev-parse HEAD~1)</code></h3>
-        <p>During local merges, Git automatically sets the <code>ORIG_HEAD</code> reference. In CI checkout runners, this reference is absent. We resolve this by running a git reference pointer updates manually, setting <code>ORIG_HEAD</code> to point directly to the parent commit (<code>HEAD~1</code>) before executing the CLI run.</p>
+        <h3>2. <code>npm install -g briefed-cli</code></h3>
+        <p>Installs the published CLI from npm. No source checkout or TypeScript compilation needed — just the released package.</p>
 
-        <h3>3. <code>[skip ci]</code> in Commit Messages</h3>
-        <p>When the workflow pushes updates back to the repository, it could trigger a recursive loop (the push triggering a new action run, which pushes changes, and so on). Appending the tag <code>[skip ci]</code> (or <code>[ci skip]</code>) inside the commit message instructs GitHub Actions to ignore this push, preventing infinite workflows.</p>
+        <h3>3. <code>git update-ref ORIG_HEAD $(git rev-parse HEAD~1)</code></h3>
+        <p>During local merges, Git sets <code>ORIG_HEAD</code> automatically. CI runners don't have this reference, so we set it manually to <code>HEAD~1</code> (the previous commit) before running Briefed.</p>
+
+        <h3>4. <code>[skip ci]</code> in the commit message</h3>
+        <p>When the workflow commits the updated context file back to the repo, it would normally trigger another workflow run — creating an infinite loop. The <code>[skip ci]</code> tag instructs GitHub Actions to skip that trigger.</p>
 
         <div class="brutal-callout callout-violet">
-          <div class="callout-title">🔑 Configuring GitHub secrets</div>
-          <p class="callout-body">Ensure your cloud API keys are safely configured in your repository secrets! Go to your repository on GitHub ➡️ **Settings** ➡️ **Secrets and variables** ➡️ **Actions**, click **New repository secret**, and save your credentials under `GEMINI_API_KEY` or `BRIEFED_API_KEY`.</p>
+          <div class="callout-title">🔑 Adding GitHub secrets</div>
+          <p class="callout-body">Go to your repository → <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong> → <strong>New repository secret</strong>. Add <code>GEMINI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code>. Without a key configured, Briefed falls back to the mechanical (no-LLM) summarizer automatically — so the workflow still works, just with less semantic detail.</p>
         </div>
       </article>
 
