@@ -3,9 +3,14 @@
 Managed by Briefed.
 
 <!-- BRIEFED_START -->
+## [2026-06-01T21:00:28.757Z] 630be1e0d4734b32d9bc20188cbc4b5cdcbca9fb (master)
+FILES: docs/ (ci-cd.html, getting-started.html) | src/ (cli.ts) | website/ (app.js, ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html, styles.css)
+DEPS: 117 insertions, 3878 deletions
+
 ## [2026-06-01T20:51:28.713Z] dc7e36b54c56c6ce05b4b82a3bc713e405a0ed96 (master)
-FILES: .github/ (briefed-context.yml)
 DEPS: 3 insertions, 6 deletions
+
+FILES: .github/, (briefed-context.yml)
 
 ## [2026-06-01T20:49:22.966Z] adf7c75b87b1d32b867c4141849e72ff0fb79e3f (master)
 DEPS: 60 insertions, 18 deletions
@@ -46,9 +51,4 @@ FILES: ./, (CLAUDE.md)
 DEPS: 7 insertions, 2 deletions
 
 FILES: .github/, (briefed-context.yml)
-
-## [2026-06-01T14:49:13.880Z] 66cfbf380b9e86b82eac67326014b280e6c56574
-DEPS: 4599 insertions, 0 deletions
-
-FILES: .github/ (briefed-context.yml) | ./ (.gitignore, CLAUDE.md, README.md, package-lock.json, package.json, tsconfig.json) | scripts/ (post-merge, post-rewrite) | src/ (config.test.ts, git.test.ts, hook.test.ts, summarize.test.ts, writer.test.ts, cli.ts, config.ts, git.ts, hook.ts, summarize.ts, types.ts, writer.ts)
 <!-- BRIEFED_END -->
