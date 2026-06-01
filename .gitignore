@@ -3,3 +3,4 @@ dist/
 .briefed.json
 *.tmp
 *.temp
+.npmrc
