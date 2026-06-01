@@ -6,6 +6,10 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-01T23:53:51.596Z] 52d60d237c9fd7cd95ebac94c2a4c2659d4e444a (master)
+FILES: src/ (config.ts, summarize.ts)
+DEPS: 2 insertions, 2 deletions
+
 ## [2026-06-01T23:52:27.499Z] dff0d69a52e0b969a7296078c03c3f92b7a6c49f
 <think>
 Alright, I'm trying to figure out how the user made their changes based on the provided "diff" file. Let me start by looking at each section of the diff.
