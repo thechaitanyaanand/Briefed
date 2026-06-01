@@ -29,47 +29,107 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!soundEnabled) return;
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      
       const now = audioCtx.currentTime;
       
       if (type === 'click') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(850, now);
-        osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-        osc.start(now);
-        osc.stop(now + 0.05);
+        // High-end mechanical tactile switch pop
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(1200, now);
+        osc1.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+        
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(3200, now);
+        osc2.frequency.exponentialRampToValueAtTime(800, now + 0.02);
+        
+        gainNode.gain.setValueAtTime(0.12, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.05);
+        osc2.stop(now + 0.05);
       } else if (type === 'slide') {
+        // Satisfying heavy analog slide frequency sweep
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.linearRampToValueAtTime(580, now + 0.12);
-        gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(680, now + 0.15);
+        
+        gainNode.gain.setValueAtTime(0.06, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
         osc.start(now);
-        osc.stop(now + 0.12);
-      } else if (type === 'success') {
-        // Double pitch chirp
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(520, now);
-        osc.frequency.setValueAtTime(780, now + 0.06);
-        osc.frequency.setValueAtTime(1100, now + 0.12);
-        gain.gain.setValueAtTime(0.03, now);
-        gain.gain.exponentialRampToValueAtTime(0.002, now + 0.18);
-        osc.start(now);
-        osc.stop(now + 0.18);
-      } else if (type === 'type') {
+        osc.stop(now + 0.15);
+      } else if (type === 'tick') {
+        // High-precision tactile potentiometer click/tick
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(650, now);
-        gain.gain.setValueAtTime(0.025, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+        osc.frequency.setValueAtTime(1600, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.015);
+        
+        gainNode.gain.setValueAtTime(0.05, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
         osc.start(now);
-        osc.stop(now + 0.025);
+        osc.stop(now + 0.015);
+      } else if (type === 'success') {
+        // Premium cyber arpeggio chord chime
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.05, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        gainNode.connect(audioCtx.destination);
+        
+        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        freqs.forEach((f, i) => {
+          const osc = audioCtx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.06);
+          osc.connect(gainNode);
+          osc.start(now + i * 0.06);
+          osc.stop(now + i * 0.06 + 0.12);
+        });
+      } else if (type === 'type') {
+        // Tactile CRT terminal keyboard keypress
+        const osc = audioCtx.createOscillator();
+        const noise = audioCtx.createOscillator(); // Subharmonic
+        const gainNode = audioCtx.createGain();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.03);
+        
+        noise.type = 'sine';
+        noise.frequency.setValueAtTime(80, now);
+        
+        gainNode.gain.setValueAtTime(0.08, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        
+        osc.connect(gainNode);
+        noise.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc.start(now);
+        noise.start(now);
+        osc.stop(now + 0.035);
+        noise.stop(now + 0.035);
       }
     } catch (err) {
       // AudioContext blocks handled gracefully
@@ -547,7 +607,7 @@ FILES: ${files.join(', ')}
       currentConfig.window.days = days;
       
       // Throttle slide clicking sound
-      if (days % 3 === 0) playSynthSound('type');
+      if (days % 3 === 0) playSynthSound('tick');
       
       syncConfigDashboard();
     });
@@ -562,7 +622,7 @@ FILES: ${files.join(', ')}
       const val = parseInt(e.target.value);
       if (linesReadout) linesReadout.textContent = `${val} Lines`;
       currentConfig.minDiffLines = val;
-      playSynthSound('type');
+      playSynthSound('tick');
       syncConfigDashboard();
     });
     
