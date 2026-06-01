@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Briefed — AI-Powered Context Sync for Modern Developers</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="A premium zero-dependency CLI that auto-updates your AI context files (CLAUDE.md) in the background after every git pull/merge using LLMs (Ollama, Gemini, Claude).">
+  <meta name="keywords" content="Git hooks, AI context, developer tools, LLM, CLI, Ollama, Gemini, Claude, post-merge hook">
+  <meta name="author" content="Briefed Team">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <!-- Vanilla CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Custom Blocky Retro Cursor -->
+  <div id="custom-cursor"></div>
+
+  <!-- Diagonal Top Banner / Notice -->
+  <div class="top-announcement">
+    <div class="marquee-wrapper-top">
+      <div class="marquee-content-top">
+        <span>⚡ VERSION 0.9.0-BETA.1 IS LIVE! ⚡</span>
+        <span>⚡ ZERO DEPENDENCY Node.js CORE ⚡</span>
+        <span>⚡ SAY GOODBYE TO STALE AI MEMORIES ⚡</span>
+        <span>⚡ FULLY OPEN SOURCE ⚡</span>
+        <span>⚡ VERSION 0.9.0-BETA.1 IS LIVE! ⚡</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- High-Impact Neo-Brutalist Navigation -->
+  <header class="main-header">
+    <div class="logo-box">
+      <span class="logo-text">BRIEFED</span>
+      <span class="logo-blinker">■</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#how-it-works" class="nav-link">HOW IT WORKS</a>
+      <a href="#simulator" class="nav-link">LIVE SIMULATOR</a>
+      <a href="#config-grid" class="nav-link">CONFIGURATION</a>
+      <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="nav-btn-link">
+        <button class="header-btn" id="github-btn">GITHUB</button>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-container">
+
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+      <div class="hero-text-block">
+        <div class="tagline-badge">BACKGROUND GIT HOOK</div>
+        <h1 class="hero-title">
+          AI-POWERED <br>
+          <span class="violet-glow">CONTEXT SYNC</span> <br>
+          FOR DEV AGENTS
+        </h1>
+        <p class="hero-subtitle">
+          Briefed is a lightweight, zero-dependency CLI that runs in the background of your Git hooks. It diffs pull history, summarizes edits via local or cloud LLMs, and updates files like <code class="code-highlight">CLAUDE.md</code> automatically. Keeps your IDE assistant constantly aligned.
+        </p>
+        <div class="hero-actions">
+          <button class="action-btn-green" id="install-copy-btn">
+            <span class="btn-terminal-prefix">$</span> npm install -g briefed
+            <span class="copy-success-tooltip" id="copy-tooltip">✓ COPIED!</span>
+          </button>
+          <a href="#simulator" class="secondary-btn-link">
+            <button class="action-btn-white">TEST DRIVE</button>
+          </a>
+        </div>
+      </div>
+
+      <!-- Retro Terminal Widget -->
+      <div class="hero-terminal-container">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+          </div>
+          <div class="terminal-title">briefed-init.sh</div>
+          <div class="terminal-tab">active</div>
+        </div>
+        <div class="terminal-body" id="hero-terminal-screen">
+          <div class="terminal-line"><span class="prompt-symbol">$</span> <span class="typing-text" id="terminal-typed-text"></span><span class="cursor-block" id="terminal-cursor">■</span></div>
+          <div class="terminal-output-block" id="terminal-output"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE DIAGONAL TICKER TAPE -->
+    <section class="marquee-section">
+      <div class="diagonal-marquee-tape">
+        <div class="marquee-content-scroller">
+          <span>NO MORE MANUAL CONTEXT DUMPS ⚡ </span>
+          <span>LLM-POWERED GIT HOOKS ⚡ </span>
+          <span>ZERO-CONFIG ONBOARDING ⚡ </span>
+          <span>ATOMIC TMP SWAP SAFETY ⚡ </span>
+          <span>OLLAMA & GEMINI SUPPORT ⚡ </span>
+          <span>ROBUST CRASH SAFETY ⚡ </span>
+          <span>NO MORE MANUAL CONTEXT DUMPS ⚡ </span>
+          <span>LLM-POWERED GIT HOOKS ⚡ </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS (Vertical circuit grid of 3.5" floppy disk cards) -->
+    <section class="how-it-works-section" id="how-it-works">
+      <h2 class="section-title">THE ENGINE ARCHITECTURE</h2>
+      <div class="circuit-grid">
+        
+        <!-- Floppy Disk Card 1 -->
+        <div class="floppy-card" id="floppy-1">
+          <div class="floppy-shutter">
+            <div class="shutter-metal"></div>
+            <div class="shutter-notch"></div>
+          </div>
+          <div class="floppy-body">
+            <div class="floppy-disk-label">
+              <span class="disk-num">01</span>
+              <h3 class="disk-title">INITIALIZE HOOK</h3>
+              <p class="disk-description">
+                Briefed hooks into your Git workflow (post-merge and post-rewrite). Every time you pull, merge, or rebase, the CLI triggers instantly.
+              </p>
+              <div class="disk-stripes">
+                <span class="stripe green-stripe"></span>
+                <span class="stripe violet-stripe"></span>
+              </div>
+            </div>
+            <div class="write-protect-notch">
+              <div class="notch-slider"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floppy Disk Card 2 -->
+        <div class="floppy-card" id="floppy-2">
+          <div class="floppy-shutter">
+            <div class="shutter-metal"></div>
+            <div class="shutter-notch"></div>
+          </div>
+          <div class="floppy-body">
+            <div class="floppy-disk-label">
+              <span class="disk-num">02</span>
+              <h3 class="disk-title">DIFF & SUMMARIZE</h3>
+              <p class="disk-description">
+                Briefed runs optimized, zero-shell commands to diff the code history. It scrubs credentials, limits token bloat, and summaries changes using local Ollama or cloud APIs.
+              </p>
+              <div class="disk-stripes">
+                <span class="stripe green-stripe"></span>
+                <span class="stripe violet-stripe"></span>
+              </div>
+            </div>
+            <div class="write-protect-notch">
+              <div class="notch-slider"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floppy Disk Card 3 -->
+        <div class="floppy-card" id="floppy-3">
+          <div class="floppy-shutter">
+            <div class="shutter-metal"></div>
+            <div class="shutter-notch"></div>
+          </div>
+          <div class="floppy-body">
+            <div class="floppy-disk-label">
+              <span class="disk-num">03</span>
+              <h3 class="disk-title">ATOMIC WRITING</h3>
+              <p class="disk-description">
+                Using local lockfiles and temporary buffer swaps, Briefed appends the structured markdown log to your context files safely without write conflicts.
+              </p>
+              <div class="disk-stripes">
+                <span class="stripe green-stripe"></span>
+                <span class="stripe violet-stripe"></span>
+              </div>
+            </div>
+            <div class="write-protect-notch">
+              <div class="notch-slider"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LIVE INTERACTIVE HOOK SIMULATOR -->
+    <section class="simulator-section" id="simulator">
+      <h2 class="section-title">LIVE HOOK SIMULATOR</h2>
+      <p class="section-subtitle">Toggle Git operations below to simulate how Briefed generates structural summaries and auto-injects them inside context files in real-time!</p>
+      
+      <div class="simulator-split-pane">
+        
+        <!-- Controls Panel (Left) -->
+        <div class="sim-controls-card">
+          <div class="card-header-bar">
+            <span>GIT EVENT EMULATOR</span>
+            <span class="indicator-blink"></span>
+          </div>
+          <div class="sim-switches-group">
+            
+            <!-- Switch A -->
+            <div class="sim-switch-box" id="switch-a-box">
+              <div class="switch-meta">
+                <span class="switch-badge badge-green">FEATURE</span>
+                <span class="switch-branch">feature/auth</span>
+              </div>
+              <h3 class="switch-label-title">Implement OAuth2 Security Flow</h3>
+              <p class="switch-desc">Adds secure login endpoints in <code class="code-sub">/src/auth.ts</code> and deletes deprecated raw secret tables.</p>
+              <div class="brutal-toggle-wrapper">
+                <button class="brutal-toggle-btn active" id="toggle-auth">ON</button>
+              </div>
+            </div>
+
+            <!-- Switch B -->
+            <div class="sim-switch-box" id="switch-b-box">
+              <div class="switch-meta">
+                <span class="switch-badge badge-violet">DEPENDENCIES</span>
+                <span class="switch-branch">patch/deps</span>
+              </div>
+              <h3 class="switch-label-title">Upgrade UI Core Packages</h3>
+              <p class="switch-desc">Installs <code class="code-sub">chalk</code> and upgrades <code class="code-sub">vitest</code> to version 1.6 in <code class="code-sub">package.json</code>.</p>
+              <div class="brutal-toggle-wrapper">
+                <button class="brutal-toggle-btn" id="toggle-deps">OFF</button>
+              </div>
+            </div>
+
+            <!-- Switch C -->
+            <div class="sim-switch-box" id="switch-c-box">
+              <div class="switch-meta">
+                <span class="switch-badge badge-yellow">BUGFIX</span>
+                <span class="switch-branch">hotfix/windows-lf</span>
+              </div>
+              <h3 class="switch-label-title">Resolve Windows CRLF Hook Bug</h3>
+              <p class="switch-desc">Modifies the post-merge script in <code class="code-sub">hook.ts</code> to force Unix LF line-endings.</p>
+              <div class="brutal-toggle-wrapper">
+                <button class="brutal-toggle-btn" id="toggle-bugfix">OFF</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Terminal Screen (Right) -->
+        <div class="sim-terminal-card">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <div class="terminal-title">CLAUDE.md — AI Context File</div>
+            <div class="terminal-tab green-tab">Sync Active</div>
+          </div>
+          <div class="sim-terminal-screen">
+            <pre class="terminal-pre" id="simulator-output-pre"></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CONFIGURATION DASHBOARD GRID -->
+    <section class="config-grid-section" id="config-grid">
+      <h2 class="section-title">THE CONFIGURATION BOARD</h2>
+      <p class="section-subtitle">Click and rotate dials, toggle options, or slide bars below to test the parameters stored inside <code class="code-highlight">.briefed.json</code>.</p>
+
+      <div class="dashboard-panel">
+        
+        <!-- Panel 1: Target File -->
+        <div class="dash-card">
+          <h3 class="dash-card-title">1. TARGET RESOLVER</h3>
+          <p class="dash-card-desc">Where should Briefed dump its context entries? Auto-detection priorities scan for files in order.</p>
+          <div class="rotary-switch-box">
+            <div class="rotary-dial" id="target-dial">
+              <div class="dial-pointer"></div>
+            </div>
+            <div class="dial-labels">
+              <span class="dial-lbl active" id="lbl-auto">AUTO</span>
+              <span class="dial-lbl" id="lbl-claude">CLAUDE.md</span>
+              <span class="dial-lbl" id="lbl-agents">AGENTS.md</span>
+            </div>
+          </div>
+          <div class="dash-readout">Resolved target: <span class="readout-val" id="readout-target">CLAUDE.md</span></div>
+        </div>
+
+        <!-- Panel 2: LLM Backend -->
+        <div class="dash-card">
+          <h3 class="dash-card-title">2. LLM BACKEND</h3>
+          <p class="dash-card-desc">Choose the summarization brain. Ollama runs local and free. Gemini and Claude run cloud-accelerated.</p>
+          <div class="knob-toggles">
+            <button class="knob-toggle-btn active" id="btn-ollama">OLLAMA</button>
+            <button class="knob-toggle-btn" id="btn-gemini">GEMINI</button>
+            <button class="knob-toggle-btn" id="btn-anthropic">CLAUDE</button>
+            <button class="knob-toggle-btn" id="btn-none">NONE (MECH)</button>
+          </div>
+          <div class="dash-readout">Active Backend: <span class="readout-val" id="readout-backend">ollama</span></div>
+        </div>
+
+        <!-- Panel 3: Rolling Window Slider -->
+        <div class="dash-card">
+          <h3 class="dash-card-title">3. ROLLING WINDOW</h3>
+          <p class="dash-card-desc">Prune older entries automatically based on dates. Prevents unbounded context growth and token bloat.</p>
+          <div class="fader-track-box">
+            <span class="fader-limit">1 Day</span>
+            <div class="fader-track">
+              <div class="fader-handle" id="fader-handle-days"></div>
+            </div>
+            <span class="fader-limit">30 Days</span>
+          </div>
+          <div class="dash-readout">Window Limit: <span class="readout-val" id="readout-days">7 Days</span></div>
+        </div>
+
+        <!-- Panel 4: Smart Skip Dial -->
+        <div class="dash-card">
+          <h3 class="dash-card-title">4. SMART SKIP THRESHOLD</h3>
+          <p class="dash-card-desc">If git diff line count is below this dial limit, it skips the LLM and runs a mechanical summary instantly.</p>
+          <div class="line-selector-box">
+            <input type="range" min="2" max="50" value="10" class="brutal-slider" id="min-diff-slider">
+          </div>
+          <div class="dash-readout">Skip under: <span class="readout-val" id="readout-lines">10 Lines</span></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- BOTTOM CALL TO ACTION -->
+    <section class="cta-section">
+      <div class="cta-inner-card">
+        <h2 class="cta-title">UPGRADE YOUR AI WORKFLOW INSTANTLY</h2>
+        <p class="cta-subtitle">Zero configuration, zero dependencies, total context alignment. Briefed is open for local community testing.</p>
+        <div class="cta-actions">
+          <button class="action-btn-green" id="cta-install-btn">
+            <span class="btn-terminal-prefix">$</span> npm install -g briefed
+          </button>
+        </div>
+        <div class="cta-footer-terminal-logs">
+          <span class="log-indicator green-blink"></span>
+          <span class="footer-log-text">SYSTEM SECURED AND VERIFIED WITH 76 VITEST RUNS ✅</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Neo-Brutalist Footer -->
+  <footer class="main-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-text">BRIEFED CLI</span>
+        <p class="brand-sub">The background AI context synchronization engine.</p>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">RESOURCE MAP</h4>
+        <a href="#how-it-works" class="footer-link">Engine Architecture</a>
+        <a href="#simulator" class="footer-link">Live Hook Simulator</a>
+        <a href="#config-grid" class="footer-link">Configuration Dashboard</a>
+      </div>
+      <div class="footer-links-col">
+        <h4 class="footer-title">DEVELOPER</h4>
+        <a href="https://github.com/thechaitanyaanand/Briefed" target="_blank" class="footer-link">GitHub Repository</a>
+        <a href="https://www.npmjs.com/package/briefed" target="_blank" class="footer-link">npm Package</a>
+        <a href="https://github.com/thechaitanyaanand/Briefed/issues" target="_blank" class="footer-link">Report issues</a>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <p class="copy-text">© 2026 Briefed CLI. Released under the MIT License.</p>
+      <div class="footer-console-prompt">admin@briefed-shell:~$ <span class="blinking-footer-block">■</span></div>
+    </div>
+  </footer>
+
+  <!-- Vanilla JS Script -->
+  <script src="app.js"></script>
+</body>
+</html>
