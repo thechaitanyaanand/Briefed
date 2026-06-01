@@ -511,7 +511,7 @@ body {
   border: var(--border-thick);
   box-shadow: var(--shadow-offset);
   border-radius: 12px 12px 0 0;
-  height: 380px;
+  height: 410px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -815,11 +815,12 @@ body {
   background-color: var(--bg-card);
   border: var(--border-thick);
   box-shadow: var(--shadow-offset);
-  padding: 30px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 340px;
+  min-height: 350px;
+  height: auto;
   transition: all 0.15s var(--ease-brutal);
 }
 
@@ -1192,7 +1193,7 @@ body {
   }
 
   .floppy-card {
-    height: 350px;
+    height: 410px; /* Maintain height to prevent text clipping */
   }
 
   .simulator-split-pane {
@@ -1206,7 +1207,8 @@ body {
   }
 
   .dash-card {
-    height: 320px;
+    min-height: 350px;
+    height: auto; /* Allow natural expansion */
   }
 }
 
@@ -1217,13 +1219,16 @@ body {
 
   .main-header {
     flex-direction: column;
-    gap: 20px;
-    align-items: flex-start;
+    gap: 15px;
+    align-items: center;
+    padding: 15px 4%;
   }
 
   .nav-links {
     width: 100%;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
   .footer-grid {

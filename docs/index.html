@@ -200,75 +200,48 @@
         <!-- Controls Panel (Left) -->
         <div class="sim-controls-card">
           <div class="card-header-bar">
-            <div class="sim-tabs-header">
-              <button class="sim-tab-btn active" id="sim-btn-presets">PRESET MERGES</button>
-              <button class="sim-tab-btn" id="sim-btn-custom">CUSTOM GIT DIFF</button>
-            </div>
+            <span>GIT EVENT EMULATOR</span>
             <span class="indicator-blink"></span>
           </div>
 
-          <!-- Tab 1: Preset Toggles -->
-          <div class="sim-tab-pane active" id="sim-pane-presets">
-            <div class="sim-switches-group">
-              <!-- Switch A -->
-              <div class="sim-switch-box" id="switch-a-box">
-                <div class="switch-meta">
-                  <span class="switch-badge badge-green">FEATURE</span>
-                  <span class="switch-branch">feature/auth-oauth2</span>
-                </div>
-                <h3 class="switch-label-title">Implement OAuth2 Security Flow</h3>
-                <p class="switch-desc">Adds secure login endpoints in <code class="code-sub">/src/auth.ts</code> and deletes deprecated raw secret tables.</p>
-                <div class="brutal-toggle-wrapper">
-                  <button class="brutal-toggle-btn active" id="toggle-auth">ON</button>
-                </div>
+          <div class="sim-switches-group">
+            <!-- Switch A -->
+            <div class="sim-switch-box" id="switch-a-box">
+              <div class="switch-meta">
+                <span class="switch-badge badge-green">FEATURE</span>
+                <span class="switch-branch">feature/auth-oauth2</span>
               </div>
-
-              <!-- Switch B -->
-              <div class="sim-switch-box" id="switch-b-box">
-                <div class="switch-meta">
-                  <span class="switch-badge badge-violet">DEPENDENCIES</span>
-                  <span class="switch-branch">patch/upgrade-deps</span>
-                </div>
-                <h3 class="switch-label-title">Upgrade UI Core Packages</h3>
-                <p class="switch-desc">Installs <code class="code-sub">chalk</code> and upgrades <code class="code-sub">vitest</code> to version 1.6 in <code class="code-sub">package.json</code>.</p>
-                <div class="brutal-toggle-wrapper">
-                  <button class="brutal-toggle-btn" id="toggle-deps">OFF</button>
-                </div>
-              </div>
-
-              <!-- Switch C -->
-              <div class="sim-switch-box" id="switch-c-box">
-                <div class="switch-meta">
-                  <span class="switch-badge badge-yellow">BUGFIX</span>
-                  <span class="switch-branch">hotfix/windows-crlf</span>
-                </div>
-                <h3 class="switch-label-title">Resolve Windows CRLF Hook Bug</h3>
-                <p class="switch-desc">Modifies post-merge hook in <code class="code-sub">src/hook.ts</code> to force Unix LF line-endings.</p>
-                <div class="brutal-toggle-wrapper">
-                  <button class="brutal-toggle-btn" id="toggle-bugfix">OFF</button>
-                </div>
+              <h3 class="switch-label-title">Implement OAuth2 Security Flow</h3>
+              <p class="switch-desc">Adds secure login endpoints in <code class="code-sub">/src/auth.ts</code> and deletes deprecated raw secret tables.</p>
+              <div class="brutal-toggle-wrapper">
+                <button class="brutal-toggle-btn active" id="toggle-auth">ON</button>
               </div>
             </div>
-          </div>
 
-          <!-- Tab 2: Custom Git Diff Textarea -->
-          <div class="sim-tab-pane" id="sim-pane-custom">
-            <div class="custom-diff-editor">
-              <p class="editor-help-text">Type your own file modifications to test the scrubbing and skip-threshold engine! Add key patterns like <code>API_KEY="secret"</code> to check secret redactors.</p>
-              <div class="code-editor-box">
-                <div class="line-numbers">
-                  <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
-                </div>
-                <textarea class="editor-textarea" id="custom-diff-input" spellcheck="false" autocomplete="off">diff --git a/src/db.ts b/src/db.ts
---- a/src/db.ts
-+++ b/src/db.ts
-@@ -12,4 +12,6 @@
-+const db_key = "AIzaSyD-geminiKey12345";
-+export const pgPool = new Pool({
-+  connectionString: "postgres://admin:pwd99@localhost:5432/briefed"
-+});</textarea>
+            <!-- Switch B -->
+            <div class="sim-switch-box" id="switch-b-box">
+              <div class="switch-meta">
+                <span class="switch-badge badge-violet">DEPENDENCIES</span>
+                <span class="switch-branch">patch/upgrade-deps</span>
               </div>
-              <button class="action-btn-green sim-run-btn" id="btn-run-custom-sim">RUN SIMULATION ⚡</button>
+              <h3 class="switch-label-title">Upgrade UI Core Packages</h3>
+              <p class="switch-desc">Installs <code class="code-sub">chalk</code> and upgrades <code class="code-sub">vitest</code> to version 1.6 in <code class="code-sub">package.json</code>.</p>
+              <div class="brutal-toggle-wrapper">
+                <button class="brutal-toggle-btn" id="toggle-deps">OFF</button>
+              </div>
+            </div>
+
+            <!-- Switch C -->
+            <div class="sim-switch-box" id="switch-c-box">
+              <div class="switch-meta">
+                <span class="switch-badge badge-yellow">BUGFIX</span>
+                <span class="switch-branch">hotfix/windows-crlf</span>
+              </div>
+              <h3 class="switch-label-title">Resolve Windows CRLF Hook Bug</h3>
+              <p class="switch-desc">Modifies post-merge hook in <code class="code-sub">src/hook.ts</code> to force Unix LF line-endings.</p>
+              <div class="brutal-toggle-wrapper">
+                <button class="brutal-toggle-btn" id="toggle-bugfix">OFF</button>
+              </div>
             </div>
           </div>
         </div>

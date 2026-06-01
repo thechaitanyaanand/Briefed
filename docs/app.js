@@ -204,36 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 5. LIVE SIMULATOR SYSTEM (Toggles, Custom editor, Tab routing)
   // ==========================================
-  
-  // Tab Routing - Presets vs Custom Editor
-  const simBtnPresets = document.getElementById('sim-btn-presets');
-  const simBtnCustom = document.getElementById('sim-btn-custom');
-  const simPanePresets = document.getElementById('sim-pane-presets');
-  const simPaneCustom = document.getElementById('sim-pane-custom');
-
-  let activeInputTab = 'presets';
-
-  if (simBtnPresets && simBtnCustom) {
-    simBtnPresets.addEventListener('click', () => {
-      simBtnPresets.classList.add('active');
-      simBtnCustom.classList.remove('active');
-      if (simPanePresets) simPanePresets.classList.add('active');
-      if (simPaneCustom) simPaneCustom.classList.remove('active');
-      activeInputTab = 'presets';
-      playSynthSound('click');
-      renderSimulatorOutput();
-    });
-
-    simBtnCustom.addEventListener('click', () => {
-      simBtnCustom.classList.add('active');
-      simBtnPresets.classList.remove('active');
-      if (simPaneCustom) simPaneCustom.classList.add('active');
-      if (simPanePresets) simPanePresets.classList.remove('active');
-      activeInputTab = 'custom';
-      playSynthSound('click');
-      renderSimulatorOutput();
-    });
-  }
 
   // Output Tabs Routing - CLAUDE.md vs Terminal Output vs IDE Agent Memory
   const btnOutClaude = document.getElementById('btn-out-claude');
@@ -297,26 +267,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Custom Editor Simulator trigger
-  const btnRunCustomSim = document.getElementById('btn-run-custom-sim');
-  const customDiffInput = document.getElementById('custom-diff-input');
-
-  if (btnRunCustomSim) {
-    btnRunCustomSim.addEventListener('click', () => {
-      playSynthSound('success');
-      renderSimulatorOutput();
-      if (btnOutClaude) btnOutClaude.click();
-    });
-  }
-
   // Simulator core renderer
   function renderSimulatorOutput() {
     if (!simOutput || !simTerminalPre || !simAgentChat) return;
-
-    if (activeInputTab === 'custom') {
-      simulateCustomDiffOutput();
-      return;
-    }
 
     // Preset scenarios rendering
     const isAuth = switches.find(s => s.id === 'auth').active;
@@ -463,137 +416,6 @@ FILES: ${files.join(', ')}
         ➔ <b>My Coding Action:</b> When generating or editing shell script payloads, I will strictly format them with Unix line endings (\\n) so they never fail in developer Git Bash shells on Windows.
       </div>`;
     }
-
-    simAgentChat.innerHTML = `
-      <div class="agent-msg-box">
-        <div class="agent-msg-meta">Cursor v3.8 • Model: claude-3-5-sonnet • Context: CLAUDE.md</div>
-        <div class="agent-msg-text">
-          ${agentFeedback}
-          <br>
-          My memory has been updated seamlessly. I am aligned and ready to code!
-        </div>
-      </div>
-    `;
-  }
-
-  // Parse and simulate custom diff entry compilation
-  function simulateCustomDiffOutput() {
-    const rawDiffText = customDiffInput ? customDiffInput.value : '';
-    
-    // Quick regex scans
-    const lines = rawDiffText.split('\n');
-    let additionsCount = 0;
-    let deletionsCount = 0;
-    const modifiedFilesSet = new Set();
-    let containsSecrets = false;
-    let scrubbedCredentials = [];
-
-    lines.forEach(line => {
-      if (line.startsWith('+++ b/')) {
-        modifiedFilesSet.add(line.replace('+++ b/', '').trim());
-      } else if (line.startsWith('+') && !line.startsWith('+++')) {
-        additionsCount++;
-        // Check secret patterns
-        if (/(AIzaSy[A-Za-z0-9_-]{33}|postgres:\/\/|API_KEY|aws_secret)/gi.test(line)) {
-          containsSecrets = true;
-          if (line.includes('AIzaSy')) scrubbedCredentials.push('Google Gemini API Key');
-          if (line.includes('postgres://')) scrubbedCredentials.push('PostgreSQL Database connection string');
-        }
-      } else if (line.startsWith('-') && !line.startsWith('---')) {
-        deletionsCount++;
-      }
-    });
-
-    const fileList = Array.from(modifiedFilesSet);
-    const displayFiles = fileList.length > 0 ? fileList.join(', ') : 'src/db.ts';
-
-    // Formulate a beautiful summary
-    let summaryText = '';
-    if (containsSecrets) {
-      summaryText = `- Added Postgres Database Pool instance inside src/db.ts to configure query clustering.\n- Refactored server credential handling to leverage environment variables instead of hardcoded strings.\n- Masked exposed credentials during client-side git-merge pipeline checks.`;
-    } else if (fileList.length > 0) {
-      summaryText = `- Integrated source modifications inside: ${fileList.join(', ')}.\n- Formatted repository structures to align with local project specifications.`;
-    } else {
-      summaryText = `- Executed manual local sync check to inspect file system parameters.`;
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const contextContent = 
-`# AI Context
-
-Managed by Briefed.
-
-<!-- BRIEFED_START -->
-## [${today}] c97f2ab (custom-diff-run)
-${summaryText}
-
-FILES: ${displayFiles}
-<!-- BRIEFED_END -->`;
-
-    simOutput.textContent = contextContent;
-
-    const activeBackend = document.getElementById('readout-backend') ? document.getElementById('readout-backend').textContent.toLowerCase() : 'ollama';
-    const limitLines = document.getElementById('readout-lines') ? parseInt(document.getElementById('readout-lines').textContent) : 10;
-    const totalDiffLines = additionsCount + deletionsCount;
-
-    let terminalLog = `admin@briefed-shell:~$ briefed run --verbose\n` +
-                      `[briefed] Reading config parameters from local .briefed.json...\n` +
-                      `[briefed] Successfully verified target file path: CLAUDE.md\n` +
-                      `[briefed] Resolving Git boundaries... Found custom buffer diff input.\n` +
-                      `[briefed] Changed files detected: ${displayFiles}\n` +
-                      `[briefed] Accumulating total code lines: +${additionsCount} insertions, -${deletionsCount} deletions.\n` +
-                      `[briefed] Threshold verification: ${totalDiffLines} lines modified (minDiffLines limit: ${limitLines})\n`;
-
-    let agentFeedback = '';
-
-    if (totalDiffLines < limitLines) {
-      terminalLog += `[briefed] ⚠ Total changes (${totalDiffLines} lines) fall below minDiffLines limit (${limitLines}).\n` +
-                     `[briefed] Skipping LLM request to conserve tokens! Instantly compiled mechanical folder groupings.\n`;
-      agentFeedback = `I read the updated \`CLAUDE.md\` logs. The changes were small (under ${limitLines} lines changed) and processed mechanically:
-        <div class="agent-msg-update">
-          Detected file structural updates to: ${displayFiles}<br>
-          ➔ <b>My Coding Action:</b> I have scanned and parsed the modifications. Since they were minor refactors, I will reference these adjusted directories but keep our main design templates unchanged.
-        </div>`;
-    } else if (containsSecrets) {
-      terminalLog += `[briefed] 🛡️ CRITICAL SECURITY ALERT: Exposed keys detected in local code buffer!\n`;
-      scrubbedCredentials.forEach(cred => {
-        terminalLog += `[briefed]   - Redacted: ${cred}\n`;
-      });
-      terminalLog += `[briefed] Running API payload scrubbers... Redacted credentials successfully.\n`;
-      
-      if (activeBackend === 'none') {
-        terminalLog += `[briefed] Backend set to NONE. Running mechanical sync parser.\n`;
-      } else {
-        terminalLog += `[briefed] Contacting LLM service backend (${activeBackend}) using model: default...\n` +
-                       `[briefed] Context parsed. LLM summary returned in 0.42s.\n`;
-      }
-      
-      agentFeedback = `Excellent! I noticed that Briefed automatically scrubbed exposed secrets from your Git diff before compiling context logs.
-        <div class="agent-msg-update">
-          Exposure Masked: Database credentials or Google API keys were flagged and scrubbed.<br>
-          ➔ <b>My Coding Action:</b> I am fully aware of the new PG Pool configuration in src/db.ts. I will write database queries using this PG Pool object in environment variables, and I will strictly avoid committing plain text password strings!
-        </div>`;
-    } else {
-      if (activeBackend === 'none') {
-        terminalLog += `[briefed] Backend set to NONE. Running mechanical sync parser.\n`;
-      } else {
-        terminalLog += `[briefed] Contacting LLM service backend (${activeBackend})...\n` +
-                       `[briefed] Context parsed. LLM summary returned in 0.29s.\n`;
-      }
-      
-      agentFeedback = `I scanned the updated \`CLAUDE.md\` logs compiled by Briefed from your custom diff:
-        <div class="agent-msg-update">
-          Changed Files: ${displayFiles}<br>
-          ➔ <b>My Coding Action:</b> I have adjusted my project context maps. I am fully aware of these custom directory changes and will use them for all subsequent code generation requests.
-        </div>`;
-    }
-
-    terminalLog += `[briefed] Acquiring write lock file: CLAUDE.md.lock\n` +
-                   `[briefed] Deduplication scan passed. Writing context block...\n` +
-                   `[briefed] Executing atomic buffer exchange renameSync to avoid file contamination.\n` +
-                   `[briefed] Released write lock. Sync finished successfully! ✅\n`;
-
-    simTerminalPre.textContent = terminalLog;
 
     simAgentChat.innerHTML = `
       <div class="agent-msg-box">
