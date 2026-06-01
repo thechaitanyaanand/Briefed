@@ -3,9 +3,14 @@
 Managed by Briefed.
 
 <!-- BRIEFED_START -->
+## [2026-06-01T17:00:11.673Z] 700c38c0ea005464f6125583f101bb75e4af7d78 (master)
+FILES: ./ (CLAUDE.md)
+DEPS: 6 insertions, 1 deletions
+
 ## [2026-06-01T16:42:50.660Z] 51f9c242fedf1dd04f32eb7464a45fc06dcd9f11 (master)
-FILES: .github/ (briefed-context.yml)
 DEPS: 7 insertions, 2 deletions
+
+FILES: .github/, (briefed-context.yml)
 
 ## [2026-06-01T14:49:13.880Z] 66cfbf380b9e86b82eac67326014b280e6c56574
 DEPS: 4599 insertions, 0 deletions
