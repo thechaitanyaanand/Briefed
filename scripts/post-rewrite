@@ -1,0 +1,12 @@
+#!/bin/sh
+# BRIEFED_HOOK
+[ "$1" = "rebase" ] || exit 0
+cd "$(git rev-parse --show-toplevel)" || exit 0
+if command -v briefed >/dev/null 2>&1; then
+  briefed run
+elif [ -x "./node_modules/.bin/briefed" ]; then
+  ./node_modules/.bin/briefed run
+else
+  npx --yes briefed run 2>/dev/null
+fi
+exit 0
