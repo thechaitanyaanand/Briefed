@@ -97,27 +97,29 @@ If a change is extremely minor (i.e. number of changed files $\le$ 2 AND total a
 
 ## Configuration
 
-You can customize Briefed behavior by placing a `.briefed.json` file in your project root. Here is the complete list of options:
+You can customize Briefed behavior globally by placing a `~/.briefed.json` file in your home directory, or locally via a `.briefed.json` file in your project root. Briefed deep-merges configurations in the following precedence order:
+1. **Local Project Config (`.briefed.json`)** — Project-specific overrides.
+2. **Global User Config (`~/.briefed.json`)** — Global developer defaults (e.g., API keys).
+3. **Built-in System Defaults** — Fallback options.
 
 | Option | Type | Default Value | Environment Fallback | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `target` | `string` | `"auto"` | None | The path to your target AI context file. Set to `"auto"` to run auto-detection or provide a custom relative/absolute path. |
-| `backend` | `"ollama" \| "anthropic" \| "none"` | `"ollama"` | None | The summarization service to use. Select `"none"` to completely skip LLM usage and use local mechanical templates. |
-| `model` | `string` | `"llama3"` | None | The specific model identifier passed to the LLM backend (e.g. `"llama3"`, `"claude-3-5-sonnet-20241022"`). |
-| `apiKey` | `string` | `undefined` | `BRIEFED_API_KEY`, `ANTHROPIC_API_KEY` | Secret credential API key required only for the `"anthropic"` backend. |
+| `backend` | `"ollama" \| "anthropic" \| "gemini" \| "none"` | `"ollama"` | None | The summarization service to use. Select `"none"` to completely skip LLM usage and use local mechanical templates. |
+| `model` | `string` | `"llama3"` | None | The specific model identifier passed to the LLM backend (e.g. `"llama3"`, `"claude-3-5-sonnet-20241022"`, `"gemini-2.5-flash"`). Defaults to `"gemini-2.5-flash"` when `gemini` is selected. |
+| `apiKey` | `string` | `undefined` | `GEMINI_API_KEY`, `BRIEFED_API_KEY`, `ANTHROPIC_API_KEY` | Secret credential API key required for Anthropic and Gemini backends. Resolves first-found in priority. |
 | `apiUrl` | `string` | `"http://localhost:11434"` | None | Connection endpoint API URL used specifically for local `"ollama"` requests. |
 | `window.days` | `number` | `7` | None | The maximum age of entries (in days) to retain inside the context file. Older entries are pruned. |
 | `window.entries` | `number` | `10` | None | The maximum number of entries to keep. Oldest entries are deleted when this limit is exceeded. |
 | `ignored` | `string[]` | `["*.lock", "dist/", "*.map", "*.min.js", "*.min.css"]` | None | Glob patterns used to filter files out of git diff parsing. |
 | `minDiffLines` | `number` | `10` | None | The minimum number of lines changed (insertions + deletions) to qualify for an LLM summarization call. |
 
-### Configuration Example (`.briefed.json`)
+### Configuration Example (`.briefed.json` or `~/.briefed.json`)
 
 ```json
 {
-  "target": "CLAUDE.md",
-  "backend": "anthropic",
-  "model": "claude-3-5-sonnet-20241022",
+  "backend": "gemini",
+  "model": "gemini-2.5-flash",
   "window": {
     "days": 14,
     "entries": 15
@@ -136,34 +138,43 @@ You can customize Briefed behavior by placing a `.briefed.json` file in your pro
 
 ## Supported Backends
 
-### 1. Ollama (Local Model)
+### 1. Google Gemini (Recommended)
+Fast, highly accurate, and extremely token-efficient.
+1. Obtain an API key from Google AI Studio.
+2. Configure `"backend": "gemini"` and set your model to `"gemini-2.5-flash"` (or `gemini-2.5-pro`).
+3. Export your key to the environment:
+   ```bash
+   export GEMINI_API_KEY="your-google-api-key"
+   ```
+
+### 2. Ollama (Local Model)
 Ideal for zero-cost, local-first workflows.
 1. Download and run [Ollama](https://ollama.com/).
 2. Pull your chosen local model:
    ```bash
    ollama pull llama3
    ```
-3. Set your `.briefed.json` backend to `"ollama"`. Briefed connects locally via `http://localhost:11434/api/generate` with a 15-second fail-safe timeout.
+3. Set your backend to `"ollama"`. Briefed connects locally via `http://localhost:11434/api/generate` with a 15-second fail-safe timeout.
 
-### 2. Anthropic (Cloud Model)
+### 3. Anthropic Claude
 Best for advanced semantic understanding and precise structured summaries.
-1. Obtain an API key from the [Anthropic Console](https://console.anthropic.com/).
-2. Configure `"backend": "anthropic"` and set your model to `"claude-3-5-sonnet-20241022"` (or other models).
-3. Export your key to the environment:
+1. Obtain an API key from the Anthropic Console.
+2. Configure `"backend": "anthropic"` and set your model to `"claude-3-5-sonnet-20241022"`.
+3. Export your key:
    ```bash
-   export ANTHROPIC_API_KEY="your-api-key"
+   export ANTHROPIC_API_KEY="your-anthropic-key"
    ```
 
 ---
 
 ## GitHub Action Setup
 
-You can deploy Briefed on CI/CD pipelines to ensure your project's context remains up-to-date even when pull requests are merged directly through the GitHub UI.
+Deploy Briefed on CI/CD pipelines to ensure your project's context remains up-to-date even when pull requests are merged directly through the GitHub UI.
 
 Create a file named `.github/workflows/briefed.yml`:
 
 ```yaml
-name: Briefed Context Synchronizer
+name: Briefed Context Update
 
 on:
   push:
@@ -174,10 +185,10 @@ permissions:
   contents: write
 
 jobs:
-  update-context:
+  briefed-context:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 2  # Compares previous commit (HEAD^) with current commit (HEAD)
@@ -185,29 +196,33 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 18
 
-      - name: Install Briefed
-        run: npm install -g briefed
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Configure Git and Ref
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # Set ORIG_HEAD to HEAD^ to ensure Briefed detects the merged commit range
-          git update-ref ORIG_HEAD HEAD^
+      - name: Build project
+        run: npm run build
 
-      - name: Generate AI Context Summary
+      - name: Set ORIG_HEAD manually
+        run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
+
+      - name: Run briefed
+        run: node dist/cli.js run
         env:
-          # Use Anthropic or other cloud backend if Ollama is unavailable in standard CI runners
+          BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: briefed run
 
-      - name: Commit and Push Updated Context
+      - name: Check and commit context changes
         run: |
-          # Only commit and push if the context file actually changed
-          git diff --quiet || (git add -A && git commit -m "docs: update AI context summary [skip ci]" && git push)
+          if ! git diff --quiet CLAUDE.md; then
+            git config --local user.name "github-actions[bot]"
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git add CLAUDE.md
+            git commit -m "Update AI context [skip ci]"
+            git push
+          fi
 ```
 
 ---
@@ -217,7 +232,7 @@ jobs:
 ### Graceful Engine Degradation
 Briefed incorporates a robust mechanical fallback layer when:
 - The local Ollama daemon is offline or returns connection errors.
-- Anthropic API keys are not specified or credentials fail.
+- Gemini or Anthropic API keys are not specified or credentials fail.
 - Summarization queries hit timeouts (15-second cap).
 
 When a failure occurs, the console writes a warning and invokes the mechanical fallback:
@@ -233,4 +248,24 @@ DEPS: 15 insertions, 2 deletions
 ```
 
 ### Non-Blocking Git Hooks
-To guarantee git operations (like pulls or merges) are never blocked by Briefed execution issues, the CLI inspects active environment variables. If any environment variables start with `GIT_` (signifying a Git hook runtime execution), all runtime failures are caught, printed as console warnings, and the program exits with code `0`.
+To guarantee git operations (like pulls or merges) are never blocked by Briefed execution issues, all runtime failures inside hooks are caught, printed as console warnings, and the program exits with code `0`.
+
+---
+
+## 🤖 System Prompt for Agentic IDEs (Cursor, Windsurf, Claude Dev, Antigravity)
+
+To make sure your AI coding assistant immediately understands the Git history logs generated by Briefed, copy and paste the following directive block into your global system instructions, `.cursorrules`, `CLAUDE.md`, or IDE custom rules:
+
+```markdown
+# Git Context Alignment (Briefed CLI)
+This project utilizes the Briefed CLI tool, which automatically updates the active AI context file (e.g. CLAUDE.md) after every `git pull`, merge, or rebase.
+
+## Instructions for the AI Agent:
+1. Always parse the dated Git context blocks written inside the `<!-- BRIEFED_START -->` and `<!-- BRIEFED_END -->` markers in your context file to keep your short-term memory aligned with the latest workspace state.
+2. Do not attempt to run manual git diffs or git logs to understand recent pull histories; instead, inspect the structured logs inside the context markers.
+3. Interpret the context logs as follows:
+   - **FILES:** Groups files changed in the pull by their top-level folder segments, outlining which scopes were modified.
+   - **ADDED / REMOVED / RENAMED:** Lists actual functions, exports, components, and files created, deleted, or refactored.
+   - **DEPS:** Shows package addition/removals and absolute line insertion/deletion metrics.
+4. Use this structural information to instantly grasp which endpoints, APIs, or components were recently introduced or deprecated, ensuring all code suggestions align 100% with the latest codebase updates.
+```
