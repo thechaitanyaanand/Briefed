@@ -49,6 +49,10 @@ export function resolveTargetFile(cwd: string): string {
 function deepMerge<T extends Record<string, any>>(target: T, source: Record<string, any>): T {
   const result = { ...target };
   for (const key of Object.keys(source)) {
+    // Prevent Prototype Pollution
+    if (key === '__proto__' || key === 'constructor') {
+      continue;
+    }
     const val = source[key];
     if (val !== undefined) {
       if (val && typeof val === 'object' && !Array.isArray(val)) {

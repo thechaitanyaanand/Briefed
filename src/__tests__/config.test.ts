@@ -127,6 +127,17 @@ describe('config.ts', () => {
       expect(config.window.entries).toBe(10); // still has default entries
     });
 
+    it('should protect against Prototype Pollution in deepMerge', () => {
+      const maliciousPayload = '{"__proto__": {"polluted": "yes"}, "constructor": {"prototype": {"polluted": "yes"}}}';
+      fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), maliciousPayload);
+
+      const config = getConfig(TEST_DIR);
+      
+      // Verify no pollution has occurred on the base Object or config return
+      expect((config as any).polluted).toBeUndefined();
+      expect(({} as any).polluted).toBeUndefined();
+    });
+
     describe('API Key Resolution Priority', () => {
       it('should prioritize API key from config file over environment variables', () => {
         vi.stubEnv('BRIEFED_API_KEY', 'env-briefed-key');
