@@ -1,5 +1,5 @@
 {
-  "name": "briefed",
+  "name": "briefed-cli",
   "version": "0.9.0-beta.1",
   "type": "module",
   "main": "./dist/cli.js",

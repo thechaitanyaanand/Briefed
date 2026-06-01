@@ -24,10 +24,26 @@ describe('writer.ts', () => {
 
   afterEach(() => {
     if (fs.existsSync(TEST_FILE)) {
-      fs.unlinkSync(TEST_FILE);
+      for (let i = 0; i < 15; i++) {
+        try {
+          fs.unlinkSync(TEST_FILE);
+          break;
+        } catch (e) {
+          const start = Date.now();
+          while (Date.now() - start < 15) {}
+        }
+      }
     }
     if (fs.existsSync(TEST_DIR)) {
-      fs.rmdirSync(TEST_DIR);
+      for (let i = 0; i < 15; i++) {
+        try {
+          fs.rmdirSync(TEST_DIR);
+          break;
+        } catch (e) {
+          const start = Date.now();
+          while (Date.now() - start < 15) {}
+        }
+      }
     }
   });
 

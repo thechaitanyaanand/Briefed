@@ -3,6 +3,32 @@ import * as path from 'path';
 import { BriefedConfig, ContextEntry } from './types.js';
 
 /**
+ * Robustly renames a file with multiple retry attempts on Windows systems
+ * to gracefully handle brief EPERM, EBUSY, or EACCES handle locks.
+ */
+function robustRename(from: string, to: string): void {
+  const maxAttempts = 15;
+  let lastError: any;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (err: any) {
+      lastError = err;
+      if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES') {
+        const start = Date.now();
+        while (Date.now() - start < 15) {
+          // busy wait 15ms
+        }
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Reads the content within the <!-- BRIEFED_START --> and <!-- BRIEFED_END --> markers.
  * Parses each entry from the block. Each entry begins with a header like:
  * ## [ISO_DATE] COMMIT_HASH or ## [ISO_DATE] COMMIT_HASH (BRANCH_NAME).
@@ -125,7 +151,7 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
       fileContent = `# AI Context\n\nManaged by Briefed.\n\n${startMarker}\n${endMarker}`;
       const tmpPath = `${config.target}.tmp`;
       fs.writeFileSync(tmpPath, fileContent, 'utf-8');
-      fs.renameSync(tmpPath, config.target);
+      robustRename(tmpPath, config.target);
     } else {
       fileContent = fs.readFileSync(config.target, 'utf-8');
     }
@@ -203,7 +229,7 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
 
     const tmpPath = `${config.target}.tmp`;
     fs.writeFileSync(tmpPath, updatedFileContent, 'utf-8');
-    fs.renameSync(tmpPath, config.target);
+    robustRename(tmpPath, config.target);
   } finally {
     if (acquired) {
       try {
