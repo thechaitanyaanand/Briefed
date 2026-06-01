@@ -155,7 +155,13 @@ jobs:
     </div>
     <div class="footer-bottom-bar">
       <p class="copy-text">© 2026 Briefed CLI. Released under the MIT License.</p>
-      <div class="footer-console-prompt">admin@briefed-shell:~$ <span class="blinking-footer-block">■</span></div>
+      <div class="footer-console-prompt-container">
+        <div class="footer-console-row">
+          <span class="prompt-prefix">admin@briefed-shell:~$</span> 
+          <input type="text" id="footer-terminal-input" class="footer-terminal-input-el" placeholder="type 'help'..." autocomplete="off" spellcheck="false">
+        </div>
+        <div id="footer-terminal-history" class="footer-terminal-history-log"></div>
+      </div>
     </div>
   </footer>
 

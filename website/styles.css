@@ -1418,3 +1418,341 @@ body {
     position: static;
   }
 }
+
+/* ==========================================
+   ADVANCED RETRO INTERACTIVE TELEMETRY & CRT
+   ========================================== */
+
+.dashboard-wrapper {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  margin-top: 40px;
+}
+
+.dashboard-telemetry {
+  display: flex;
+  flex-direction: column;
+}
+
+.telemetry-card {
+  background-color: var(--bg-card);
+  border: var(--border-thick);
+  box-shadow: var(--shadow-offset);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 520px;
+}
+
+.telemetry-body {
+  padding: 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #060608;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Faint scanline overlay for retro CRT look */
+.telemetry-body::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+.telemetry-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 15px;
+  z-index: 3;
+}
+
+.telemetry-tab-btn {
+  background-color: #1e1e24;
+  color: var(--gray-text);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 8px 16px;
+  border: var(--border-medium);
+  box-shadow: 3px 3px 0px #000;
+  transition: all 0.1s var(--ease-brutal);
+}
+
+.telemetry-tab-btn:hover {
+  color: var(--pure-white);
+  background-color: #2b2b36;
+}
+
+.telemetry-tab-btn.active {
+  background-color: var(--accent-yellow);
+  color: var(--pure-black);
+  box-shadow: 1px 1px 0px #000;
+  transform: translate(2px, 2px);
+}
+
+.telemetry-tab-content {
+  display: none;
+  flex-grow: 1;
+  overflow: auto;
+  z-index: 3;
+}
+
+.telemetry-tab-content.active {
+  display: block;
+}
+
+.telemetry-pre {
+  margin: 0;
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.code-json {
+  color: #a6e22e; /* Light neon green */
+}
+
+/* Style JSON keys/values */
+.code-json .json-key { color: #f92672; }   /* Neon pink */
+.code-json .json-str { color: #e6db74; }   /* Soft yellow */
+.code-json .json-num { color: #ae81ff; }   /* Purple */
+.code-json .json-bool { color: #66d9ef; }  /* Light blue */
+
+.code-shell {
+  color: #f8f8f2; /* White/grey */
+}
+
+/* ==========================================
+   LIVE SIMULATOR TABBED NAVIGATION & CUSTOM EDITOR
+   ========================================== */
+
+.sim-tabs-header {
+  display: flex;
+  gap: 10px;
+}
+
+.sim-tab-btn {
+  background-color: #1a1a1f;
+  color: var(--gray-text);
+  border: 2px solid var(--pure-white);
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.1s ease;
+}
+
+.sim-tab-btn:hover {
+  background-color: #2a2a35;
+  color: var(--pure-white);
+}
+
+.sim-tab-btn.active {
+  background-color: var(--neon-green);
+  color: var(--pure-black);
+  border-color: var(--pure-black);
+  box-shadow: 2px 2px 0px #000;
+}
+
+.sim-tab-pane {
+  display: none;
+}
+
+.sim-tab-pane.active {
+  display: block;
+}
+
+.sim-output-tabs {
+  display: flex;
+  gap: 10px;
+  margin-left: 20px;
+}
+
+.sim-out-tab-btn {
+  background-color: #0b0b0c;
+  color: var(--gray-text);
+  border: 1px solid #333;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.1s ease;
+}
+
+.sim-out-tab-btn:hover {
+  color: var(--pure-white);
+}
+
+.sim-out-tab-btn.active {
+  background-color: var(--neon-violet);
+  color: var(--pure-white);
+  border-color: var(--pure-black);
+  box-shadow: 2px 2px 0px #000;
+}
+
+.sim-out-pane {
+  display: none;
+}
+
+.sim-out-pane.active {
+  display: block;
+}
+
+/* Custom Git Diff Code Editor */
+.custom-diff-editor {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.editor-help-text {
+  font-size: 12px;
+  color: var(--gray-text);
+  line-height: 1.5;
+}
+
+.code-editor-box {
+  background-color: #08080a;
+  border: var(--border-medium);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-radius: 4px;
+  height: 220px;
+  overflow: hidden;
+}
+
+.line-numbers {
+  background-color: #121216;
+  border-right: 2px solid #202025;
+  color: #555562;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  user-select: none;
+  min-width: 32px;
+  line-height: 1.8;
+}
+
+.editor-textarea {
+  flex-grow: 1;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #00ff66;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre;
+  overflow: auto;
+}
+
+.sim-run-btn {
+  align-self: flex-start;
+  padding: 12px 24px !important;
+  font-size: 13px !important;
+}
+
+/* ==========================================
+   FOOTER INTERACTIVE COMMAND CONSOLE
+   ========================================== */
+
+.footer-console-prompt-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: var(--font-mono);
+  width: 350px;
+}
+
+.footer-console-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.prompt-prefix {
+  color: var(--gray-text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.footer-terminal-input-el {
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid #202025;
+  outline: none;
+  color: var(--neon-green);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 2px 4px;
+  flex-grow: 1;
+}
+
+.footer-terminal-input-el:focus {
+  border-bottom-color: var(--neon-green);
+}
+
+.footer-terminal-history-log {
+  width: 100%;
+  max-height: 100px;
+  overflow-y: auto;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8c8c9e;
+  text-align: left;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+
+.term-hist-row {
+  border-bottom: 1px solid #1a1a20;
+  padding-bottom: 2px;
+}
+
+.term-hist-cmd {
+  color: var(--pure-white);
+  font-weight: 700;
+}
+
+.term-hist-res {
+  color: var(--gray-text);
+  white-space: pre-wrap;
+  padding-left: 10px;
+}
+
+/* Responsive updates for the new layout */
+@media (max-width: 1200px) {
+  .dashboard-wrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .telemetry-card {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-console-prompt-container {
+    width: 100%;
+    align-items: flex-start;
+  }
+}
+
