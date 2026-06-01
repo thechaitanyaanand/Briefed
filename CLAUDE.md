@@ -3,9 +3,14 @@
 Managed by Briefed.
 
 <!-- BRIEFED_START -->
+## [2026-06-01T23:11:45.532Z] 700f026790896cabedbef1e0590b4b6ca3f28e76 (master)
+FILES: ./ (package-lock.json, package.json) | src/ (cli.test.ts)
+DEPS: 10 insertions, 10 deletions
+
 ## [2026-06-01T21:00:28.757Z] 630be1e0d4734b32d9bc20188cbc4b5cdcbca9fb (master)
-FILES: docs/ (ci-cd.html, getting-started.html) | src/ (cli.ts) | website/ (app.js, ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html, styles.css)
 DEPS: 117 insertions, 3878 deletions
+
+FILES: docs/ (ci-cd.html, getting-started.html) | src/ (cli.ts) | website/ (app.js, ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html, styles.css)
 
 ## [2026-06-01T20:51:28.713Z] dc7e36b54c56c6ce05b4b82a3bc713e405a0ed96 (master)
 DEPS: 3 insertions, 6 deletions
@@ -46,9 +51,4 @@ FILES: ./, (CLAUDE.md)
 DEPS: 6 insertions, 1 deletions
 
 FILES: ./, (CLAUDE.md)
-
-## [2026-06-01T16:42:50.660Z] 51f9c242fedf1dd04f32eb7464a45fc06dcd9f11 (master)
-DEPS: 7 insertions, 2 deletions
-
-FILES: .github/, (briefed-context.yml)
 <!-- BRIEFED_END -->
