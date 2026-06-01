@@ -11,6 +11,7 @@ import { getDiff } from './git.js';
 import { summarize } from './summarize.js';
 import { writeEntry, getLastEntry } from './writer.js';
 import { install, uninstall } from './hook.js';
+import { MetricsCollector } from './metrics.js';
 import { BriefedConfig, ContextEntry, DiffResult } from './types.js';
 
 const require = createRequire(import.meta.url);
@@ -202,6 +203,8 @@ program
   .option('-v, --verbose', 'Enable verbose debugging output')
   .action(async (options) => {
     const startTime = Date.now();
+    const metrics = new MetricsCollector();
+
     try {
       const cfg = getConfig();
       // UX-08: Smart model mismatch auto-resolution on backend override
@@ -252,9 +255,11 @@ program
       }
 
       const diff = getDiff(undefined, cfg.ignored, options.verbose, cfg.target);
+      metrics.recordDiffSize(diff.additions, diff.deletions, diff.files.length);
 
       if (diff.isEmpty) {
         console.log(chalk.gray('· No new commits or changes detected.'));
+        await metrics.saveMetrics();
         process.exit(0);
       }
 
@@ -267,13 +272,18 @@ program
 
       let summarizeOutput;
       try {
+        const summarizeStart = Date.now();
         summarizeOutput = await summarize({ diff, config: cfg });
+        metrics.recordDuration('summarize', Date.now() - summarizeStart);
       } finally {
         clearInterval(spinnerInterval);
         process.stdout.write('\r\x1b[K');
       }
 
       writeEntry(summarizeOutput.entry, cfg);
+      metrics.recordBackendUsed(summarizeOutput.backendUsed);
+      metrics.recordOutcome(true);
+      metrics.recordDuration('run', Date.now() - startTime);
 
       console.log(
         chalk.green(`✓ Context file updated: ${diff.commitHash} → ${cfg.target}`)
@@ -291,11 +301,15 @@ program
         );
       }
     } catch (error: any) {
+      metrics.recordOutcome(false, error?.message || String(error));
+      await metrics.saveMetrics();
       console.error(chalk.red(`Error: ${error?.message || error}`));
       // Exit with 0 in git hooks so we never block git operations (e.g. pull/merge)
       const isHook = Object.keys(process.env).some(key => key.startsWith('GIT_'));
       process.exit(isHook ? 0 : 1);
     }
+
+    await metrics.saveMetrics();
   });
 
 program
