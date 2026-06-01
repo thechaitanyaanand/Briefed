@@ -1,13 +1,34 @@
 {
   "name": "briefed-cli",
   "version": "0.9.0-beta.1",
+  "description": "AI-powered git context synchronizer — auto-updates CLAUDE.md, AGENTS.md, and AI context files after every git pull or merge",
+  "author": "Chaitanya Anand",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thechaitanyaanand/Briefed.git"
+  },
+  "homepage": "https://thechaitanyaanand.github.io/Briefed",
+  "keywords": [
+    "ai",
+    "context",
+    "git",
+    "claude",
+    "cursor",
+    "copilot",
+    "llm",
+    "developer-tools",
+    "git-hooks",
+    "ai-context",
+    "briefed"
+  ],
   "type": "module",
   "main": "./dist/cli.js",
   "exports": {
     ".": "./dist/cli.js"
   },
   "bin": {
-    "briefed": "./dist/cli.js"
+    "briefed": "dist/cli.js"
   },
   "files": [
     "dist",

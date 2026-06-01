@@ -10,9 +10,9 @@ Running as a zero-dependency CLI or post-merge/post-rewrite Git hook, Briefed ca
 
 - ⚙️ **Automated Hook Installation**: Standalone or chained integration into your `.husky` or `.git/hooks` directories.
 - 📂 **Target Auto-Detection**: Dynamically resolves target AI documentation in order of priority (`CLAUDE.md` → `AGENTS.md` → `.github/copilot-instructions.md`).
-- 🤖 **Multi-Backend Summarization**: Powered locally by **Ollama**, in the cloud by **Anthropic**, or locally via highly structured mechanical heuristics.
+- 🤖 **Multi-Backend Summarization**: Powered locally by **Ollama**, in the cloud by **Anthropic** or **Google Gemini**, or via structured mechanical heuristics.
 - ⚡ **Smart Skip Check**: Bypasses LLMs on minimal changes (diffs below a configurable line threshold) to save time and tokens.
-- ✂️ **Token-Safe Limits & Truncation**: Automatically limits and truncates massive git diffs (> 8,000 chars) and enforces a strict 150-word cap on LLM outputs using line-boundary pruning.
+- ✂️ **Token-Safe Limits & Truncation**: Automatically limits and truncates massive git diffs (> 8,000 chars) and enforces a strict word cap on LLM outputs using line-boundary pruning.
 - 🛡️ **Non-Blocking Execution**: Safe exit codes guarantee your Git merges, rebases, and pulls are never blocked by LLM downtime or missing network dependencies.
 
 ---
@@ -23,10 +23,10 @@ Install Briefed globally to use it across any repository, or add it to your proj
 
 ```bash
 # Global installation
-npm install -g briefed
+npm install -g briefed-cli
 
 # Local project installation
-npm install --save-dev briefed
+npm install --save-dev briefed-cli
 ```
 
 ---
@@ -79,7 +79,7 @@ If `target` is configured to `"auto"`, Briefed scans the root directory for:
 If none of these exist, a fresh `CLAUDE.md` is generated automatically with a standard markdown header.
 
 ### 3. Diff and Segment Grouping
-Briefed executes `git diff ORIG_HEAD HEAD --numstat` to identify modified files. Files matching glob patterns specified under the `"ignored"` configuration are discarded. 
+Briefed executes `git diff ORIG_HEAD HEAD --numstat` to identify modified files. Files matching glob patterns specified under the `"ignored"` configuration are discarded.
 To optimize semantic analysis:
 - Files are grouped by their top-level directory segments (e.g. `src/`, `tests/`).
 - The CLI parses git reflogs and commit history to extract the source branch name (e.g., resolving active branch merges/rebases).
@@ -88,10 +88,10 @@ To optimize semantic analysis:
 To safeguard context limits, if the diff exceeds 8,000 characters, Briefed computes a high-level `git diff ORIG_HEAD HEAD --stat`, captures it, and truncates the detailed raw diff after 200 lines. It appends a truncated line count suffix (e.g., `[... truncated, 342 lines omitted]`).
 
 ### 5. Word-Count Enforcement
-LLM engines are instructed to return a structured block output using specific categories: `FILES`, `ADDED`, `REMOVED`, `RENAMED`, and `DEPS`. Briefed enforces a rigid 150-word cap on the returned string. If the response exceeds 150 words, it iterates backwards and prunes trailing content at the last complete line, or slices the line itself, maintaining document formatting.
+LLM engines are instructed to return a structured block output using specific categories: `FILES`, `ADDED`, `REMOVED`, `RENAMED`, and `DEPS`. Briefed enforces a configurable word cap on the returned string. If the response exceeds the limit, it prunes trailing content at the last complete line boundary, maintaining document formatting.
 
 ### 6. Smart Skip Optimization
-If a change is extremely minor (i.e. number of changed files $\le$ 2 AND total additions + deletions $\le$ `minDiffLines` [default: 10]), Briefed automatically bypasses the LLM engine to run the mechanical generator instantly.
+If a change is extremely minor (i.e. number of changed files ≤ 2 AND total additions + deletions ≤ `minDiffLines` [default: 10]), Briefed automatically bypasses the LLM engine to run the mechanical generator instantly.
 
 ---
 
@@ -113,6 +113,7 @@ You can customize Briefed behavior globally by placing a `~/.briefed.json` file 
 | `window.entries` | `number` | `10` | None | The maximum number of entries to keep. Oldest entries are deleted when this limit is exceeded. |
 | `ignored` | `string[]` | `["*.lock", "dist/", "*.map", "*.min.js", "*.min.css"]` | None | Glob patterns used to filter files out of git diff parsing. |
 | `minDiffLines` | `number` | `10` | None | The minimum number of lines changed (insertions + deletions) to qualify for an LLM summarization call. |
+| `maxSummaryWords` | `number` | `150` | None | The maximum word count enforced on LLM summary outputs. |
 
 ### Configuration Example (`.briefed.json` or `~/.briefed.json`)
 
@@ -198,17 +199,14 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
+      - name: Install Briefed
+        run: npm install -g briefed-cli
 
       - name: Set ORIG_HEAD manually
         run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
 
       - name: Run briefed
-        run: node dist/cli.js run
+        run: briefed run
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -216,10 +214,11 @@ jobs:
 
       - name: Check and commit context changes
         run: |
-          if ! git diff --quiet CLAUDE.md; then
+          CHANGED=$(git diff --name-only | grep -E '^(CLAUDE\.md|AGENTS\.md|\.github/copilot-instructions\.md)$' | head -1)
+          if [ -n "$CHANGED" ]; then
             git config --local user.name "github-actions[bot]"
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git add CLAUDE.md
+            git add "$CHANGED"
             git commit -m "Update AI context [skip ci]"
             git push
           fi
