@@ -6,9 +6,14 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T15:30:26.358Z] cd5d34ac9681b9fe6508e584c2661fb55e668489 (master)
+FILES: ./ (PROMPT.md, README.md)
+DEPS: 53 insertions, 2 deletions
+
 ## [2026-06-02T00:22:41.245Z] 605e556a3db8ddea81a8a030adb661444b9a0021 (master)
-FILES: docs/ (ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html)
 DEPS: 6 insertions, 6 deletions
+
+FILES: docs/ (ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html)
 
 ## [2026-06-02T00:01:02.183Z] bc0d6d7a197b65c79ca758ffe89d7283a65ef808
 Here are the step-by-step changes based on your request:
