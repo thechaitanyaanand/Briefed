@@ -11,6 +11,13 @@ export interface WindowConfig {
    * The maximum number of entries to retain in the context file.
    */
   entries: number;
+
+  /**
+   * The maximum total words allowed across all combined entries to strictly bound context size.
+   * Older entries are pruned dynamically until the total fits within this budget.
+   * Defaults to 1000.
+   */
+  maxTotalWords?: number;
 }
 
 /**

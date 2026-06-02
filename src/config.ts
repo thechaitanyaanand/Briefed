@@ -8,7 +8,7 @@ export const DEFAULT_CONFIG: BriefedConfig = {
   backend: 'ollama',
   model: 'llama3',
   apiUrl: 'http://localhost:11434',
-  window: { days: 7, entries: 10 },
+  window: { days: 7, entries: 10, maxTotalWords: 1000 },
   ignored: ['*.lock', 'dist/', '*.map', '*.min.js', '*.min.css'],
   minDiffLines: 10,
   maxSummaryWords: 250

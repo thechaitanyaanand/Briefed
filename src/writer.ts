@@ -202,6 +202,23 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
       remainingEntries = remainingEntries.slice(0, config.window.entries);
     }
 
+    // Dynamic Word-Budget Pruning
+    if (config.window && typeof config.window.maxTotalWords === 'number' && config.window.maxTotalWords > 0) {
+      const maxTotalWords = config.window.maxTotalWords;
+      let totalWords = 0;
+      const prunedEntries: ContextEntry[] = [];
+      for (const e of remainingEntries) {
+        const entryWords = e.summary.trim().split(/\s+/).filter(Boolean).length;
+        if (prunedEntries.length === 0 || totalWords + entryWords <= maxTotalWords) {
+          prunedEntries.push(e);
+          totalWords += entryWords;
+        } else {
+          break;
+        }
+      }
+      remainingEntries = prunedEntries;
+    }
+
     // Serialize entries
     const serialized = remainingEntries
       .map(e => {

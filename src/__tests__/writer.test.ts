@@ -259,6 +259,46 @@ Summary 1
       expect(content).not.toContain('c1');
     });
 
+    it('should dynamically prune older entries beyond config.window.maxTotalWords', () => {
+      const initialContent = `
+<!-- BRIEFED_START -->
+## [2026-06-01T10:00:00Z] c4
+One two three four five six seven eight nine ten
+
+## [2026-06-01T09:00:00Z] c3
+One two three four five six seven eight nine ten
+
+## [2026-06-01T08:00:00Z] c2
+One two three four five six seven eight nine ten
+
+## [2026-06-01T07:00:00Z] c1
+One two three four five six seven eight nine ten
+<!-- BRIEFED_END -->
+      `;
+      fs.writeFileSync(TEST_FILE, initialContent, 'utf-8');
+
+      const newEntry: ContextEntry = {
+        date: '2026-06-01T11:00:00Z',
+        commitHash: 'c5',
+        summary: 'One two three four five six seven eight nine ten', // 10 words
+        filesChanged: [],
+      };
+
+      const wordLimitConfig: BriefedConfig = {
+        ...DEFAULT_CONFIG,
+        window: { days: 100, entries: 100, maxTotalWords: 25 }, // Should allow c5 (10), c4 (10), totaling 20. Adding c3 would hit 30, so c3, c2, c1 should be pruned!
+      };
+
+      writeEntry(newEntry, wordLimitConfig);
+
+      const content = fs.readFileSync(TEST_FILE, 'utf-8');
+      expect(content).toContain('c5');
+      expect(content).toContain('c4');
+      expect(content).not.toContain('c3');
+      expect(content).not.toContain('c2');
+      expect(content).not.toContain('c1');
+    });
+
     it('should warn and clean reversed markers', () => {
       const initialContent = `
 <!-- BRIEFED_END -->

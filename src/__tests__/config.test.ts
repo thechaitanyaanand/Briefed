@@ -42,7 +42,7 @@ describe('config.ts', () => {
       expect(DEFAULT_CONFIG.backend).toBe('ollama');
       expect(DEFAULT_CONFIG.model).toBe('llama3');
       expect(DEFAULT_CONFIG.apiUrl).toBe('http://localhost:11434');
-      expect(DEFAULT_CONFIG.window).toEqual({ days: 7, entries: 10 });
+      expect(DEFAULT_CONFIG.window).toEqual({ days: 7, entries: 10, maxTotalWords: 1000 });
       expect(DEFAULT_CONFIG.ignored).toContain('dist/');
       expect(DEFAULT_CONFIG.minDiffLines).toBe(10);
     });
