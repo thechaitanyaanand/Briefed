@@ -22,14 +22,17 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install Briefed
-        run: npm install -g briefed-cli
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build local Briefed
+        run: npm run build
 
       - name: Set ORIG_HEAD manually
         run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
 
       - name: Run briefed
-        run: briefed run
+        run: node dist/cli.js run
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

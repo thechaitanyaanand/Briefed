@@ -138,8 +138,34 @@ describe('config.ts', () => {
       expect(({} as any).polluted).toBeUndefined();
     });
 
+    describe('Auto-detection of backend based on environment keys', () => {
+      it('should default backend to gemini if GEMINI_API_KEY is present and no backend in config', () => {
+        vi.stubEnv('GEMINI_API_KEY', 'some-gemini-key');
+        const config = getConfig(TEST_DIR);
+        expect(config.backend).toBe('gemini');
+        expect(config.model).toBe('gemini-2.5-flash');
+      });
+
+      it('should default backend to anthropic if ANTHROPIC_API_KEY is present and no backend in config', () => {
+        vi.stubEnv('ANTHROPIC_API_KEY', 'some-anthropic-key');
+        const config = getConfig(TEST_DIR);
+        expect(config.backend).toBe('anthropic');
+      });
+
+      it('should respect configured backend even if environment keys are present', () => {
+        vi.stubEnv('GEMINI_API_KEY', 'some-gemini-key');
+        const userConfig = {
+          backend: 'ollama',
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+        const config = getConfig(TEST_DIR);
+        expect(config.backend).toBe('ollama');
+      });
+    });
+
     describe('API Key Resolution Priority', () => {
-      it('should prioritize API key from config file over environment variables', () => {
+      it('should prioritize environment variables over API key from config file', () => {
         vi.stubEnv('BRIEFED_API_KEY', 'env-briefed-key');
         vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
 
@@ -149,7 +175,7 @@ describe('config.ts', () => {
         fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
 
         const config = getConfig(TEST_DIR);
-        expect(config.apiKey).toBe('config-key');
+        expect(config.apiKey).toBe('env-briefed-key');
       });
 
       it('should prioritize BRIEFED_API_KEY over ANTHROPIC_API_KEY if key not in config file', () => {
@@ -259,7 +285,7 @@ describe('config.ts', () => {
       });
 
       describe('API Key Resolution Priority for Gemini', () => {
-        it('should prioritize API key from config file over GEMINI_API_KEY environment variable', () => {
+        it('should prioritize GEMINI_API_KEY environment variable over API key from config file', () => {
           vi.stubEnv('GEMINI_API_KEY', 'env-gemini-key');
           vi.stubEnv('BRIEFED_API_KEY', 'env-briefed-key');
           vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
@@ -271,7 +297,7 @@ describe('config.ts', () => {
           fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
 
           const config = getConfig(TEST_DIR);
-          expect(config.apiKey).toBe('config-key');
+          expect(config.apiKey).toBe('env-gemini-key');
         });
 
         it('should prioritize GEMINI_API_KEY over BRIEFED_API_KEY and ANTHROPIC_API_KEY if key not in config file', () => {

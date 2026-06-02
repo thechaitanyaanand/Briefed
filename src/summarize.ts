@@ -277,7 +277,9 @@ Deletions: ${diff.deletions}`;
       throw new Error(`Unknown backend: ${config.backend}`);
     }
 
-    // Strip reasoning <think>...</think> blocks if present
+    // Strip reasoning <think>...</think> blocks if present.
+    // This handles reasoning outputs from models like DeepSeek-R1 (both closed and unclosed/truncated)
+    // to prevent thinking tokens from consuming the context window or exceeding word-count ceilings.
     summary = summary.replace(/<think>[\s\S]*?<\/think>/gi, '');
     summary = summary.replace(/<think>[\s\S]*/gi, '');
     summary = summary.trim();
