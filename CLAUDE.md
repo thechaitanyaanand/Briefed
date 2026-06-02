@@ -6,9 +6,14 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T15:43:19.768Z] f4a0a77aa09f07aa61fcec25d01f6d594bf66650 (master)
+FILES: ./ (README.md) | docs/ (getting-started.html)
+DEPS: 36 insertions, 6 deletions
+
 ## [2026-06-02T15:31:18.982Z] cffb4f615b1352ed7b1690b96cb6fd2f03886ed6 (master)
-FILES: docs/ (configuration.html)
 DEPS: 7 insertions, 3 deletions
+
+FILES: docs/, (configuration.html)
 
 ## [2026-06-02T15:30:26.358Z] cd5d34ac9681b9fe6508e584c2661fb55e668489 (master)
 DEPS: 53 insertions, 2 deletions
