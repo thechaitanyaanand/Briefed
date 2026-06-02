@@ -436,8 +436,8 @@ describe('summarize.ts', () => {
   });
 
   describe('Word-Count Enforcement', () => {
-    it('should not truncate if response is <= 150 words', async () => {
-      const shortResponse = 'This is a short response.'.repeat(10); // 50 words
+    it('should not truncate if response is <= 250 words', async () => {
+      const shortResponse = 'This is a short response.'.repeat(20); // 100 words
       const diff: DiffResult = {
         ...emptyDiff,
         files: ['src/git.ts'],
@@ -455,11 +455,9 @@ describe('summarize.ts', () => {
       expect(output.entry.summary).toBe(shortResponse);
     });
 
-    it('should truncate at the last complete line that fits if response > 150 words', async () => {
-      // 10 words per line, 20 lines -> 200 words total
-      // Let's make it exactly 10 words per line:
-      // "one two three four five six seven eight nine ten"
-      const lines = Array.from({ length: 20 }, (_, i) => `line ${i} two three four five six seven eight nine`).join('\n');
+    it('should truncate at the last complete line that fits if response > 250 words', async () => {
+      // 10 words per line, 30 lines -> 300 words total
+      const lines = Array.from({ length: 30 }, (_, i) => `line ${i} two three four five six seven eight nine`).join('\n');
       const diff: DiffResult = {
         ...emptyDiff,
         files: ['src/git.ts'],
@@ -475,15 +473,15 @@ describe('summarize.ts', () => {
 
       const output = await summarize({ diff, config: defaultConfig });
       const outputLines = output.entry.summary.split('\n');
-      // 15 lines * 10 words/line = 150 words.
-      // So line 15 (index 14) is the last one that fits.
-      expect(outputLines.length).toBe(15);
-      expect(outputLines[14]).toBe('line 14 two three four five six seven eight nine');
+      // 25 lines * 10 words/line = 250 words.
+      // So line 25 (index 24) is the last one that fits.
+      expect(outputLines.length).toBe(25);
+      expect(outputLines[24]).toBe('line 24 two three four five six seven eight nine');
     });
 
-    it('should truncate at word level if even the first line has > 150 words', async () => {
-      // One single extremely long line of 200 words
-      const longSingleLine = 'word '.repeat(200).trim();
+    it('should truncate at word level if even the first line has > 250 words', async () => {
+      // One single extremely long line of 300 words
+      const longSingleLine = 'word '.repeat(300).trim();
       const diff: DiffResult = {
         ...emptyDiff,
         files: ['src/git.ts'],
@@ -499,7 +497,7 @@ describe('summarize.ts', () => {
 
       const output = await summarize({ diff, config: defaultConfig });
       const words = output.entry.summary.split(/\s+/);
-      expect(words.length).toBe(150);
+      expect(words.length).toBe(250);
     });
   });
 
@@ -521,6 +519,44 @@ describe('summarize.ts', () => {
 
       const output = await summarize({ diff, config: defaultConfig });
       expect(output.entry.summary).toBe('Here is &lt;!-- COMMENT --&gt; test --&gt; and &lt;!-- again.');
+    });
+
+    it('should strip <think>...</think> reasoning blocks entirely from LLM response', async () => {
+      const responseWithThink = '<think>\nEvaluating diff...\nLooking at changes.\n</think>\nFILES: src/git.ts\nADDED: new feature';
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        isEmpty: false
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: responseWithThink })
+      });
+
+      const output = await summarize({ diff, config: defaultConfig });
+      expect(output.entry.summary).toBe('FILES: src/git.ts\nADDED: new feature');
+    });
+
+    it('should strip unclosed <think> blocks entirely from LLM response', async () => {
+      const responseWithUnclosedThink = '<think>\nEvaluating diff...\nFILES: src/git.ts';
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        isEmpty: false
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: responseWithUnclosedThink })
+      });
+
+      const output = await summarize({ diff, config: defaultConfig });
+      expect(output.entry.summary).toBe('');
     });
   });
 });

@@ -11,7 +11,7 @@ export const DEFAULT_CONFIG: BriefedConfig = {
   window: { days: 7, entries: 10 },
   ignored: ['*.lock', 'dist/', '*.map', '*.min.js', '*.min.css'],
   minDiffLines: 10,
-  maxSummaryWords: 150
+  maxSummaryWords: 250
 };
 
 /**

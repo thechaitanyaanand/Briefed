@@ -254,8 +254,13 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
       throw new Error(`Unknown backend: ${config.backend}`);
     }
 
+    // Strip reasoning <think>...</think> blocks if present
+    summary = summary.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    summary = summary.replace(/<think>[\s\S]*/gi, '');
+    summary = summary.trim();
+
     // PROD-05: Configurable word-count enforcement
-    const maxWords = config.maxSummaryWords ?? 150;
+    const maxWords = config.maxSummaryWords ?? 250;
     summary = enforceWordLimit(summary, maxWords);
     summary = summary.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;');
 
