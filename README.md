@@ -210,7 +210,6 @@ permissions:
 jobs:
   briefed-context:
     runs-on: ubuntu-latest
-    if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -224,12 +223,15 @@ jobs:
           cache: 'npm'
 
       - name: Install Briefed
+        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
         run: npm install -g briefed-cli
 
       - name: Set ORIG_HEAD manually
+        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
         run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
 
       - name: Run briefed
+        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
         run: briefed run
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
@@ -237,6 +239,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Check and commit context changes
+        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
         run: |
           CHANGED=$(git diff --name-only | grep -E '^(CLAUDE\.md|AGENTS\.md|\.github/copilot-instructions\.md)$' | head -1)
           if [ -n "$CHANGED" ]; then
