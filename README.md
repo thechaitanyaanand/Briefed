@@ -93,6 +93,9 @@ LLM engines are instructed to return a structured block output using specific ca
 ### 6. Smart Skip Optimization
 If a change is extremely minor (i.e. number of changed files ≤ 2 AND total additions + deletions ≤ `minDiffLines` [default: 10]), Briefed automatically bypasses the LLM engine to run the mechanical generator instantly.
 
+### 7. Structured Core Prompts
+Briefed utilizes a highly-focused prompt structure (including dedicated system prompt configurations) to ensure clean categorical summaries. You can review the exact templates and engineering choices in [PROMPT.md](PROMPT.md).
+
 ---
 
 ## Configuration
@@ -111,9 +114,10 @@ You can customize Briefed behavior globally by placing a `~/.briefed.json` file 
 | `apiUrl` | `string` | `"http://localhost:11434"` | None | Connection endpoint API URL used specifically for local `"ollama"` requests. |
 | `window.days` | `number` | `7` | None | The maximum age of entries (in days) to retain inside the context file. Older entries are pruned. |
 | `window.entries` | `number` | `10` | None | The maximum number of entries to keep. Oldest entries are deleted when this limit is exceeded. |
-| `ignored` | `string[]` | `["*.lock", "dist/", "*.map", "*.min.js", "*.min.css"]` | None | Glob patterns used to filter files out of git diff parsing. |
+| `window.maxTotalWords` | `number` | `1000` | None | The maximum cumulative words allowed across all combined entries to strictly bound context file footprint. Older entries are pruned dynamically. |
+| `ignored` | `string[]` | `["*.lock", "package-lock.json", "pnpm-lock.yaml", "dist/", "*.map", "*.min.js", "*.min.css"]` | None | Glob patterns used to filter files out of git diff parsing. |
 | `minDiffLines` | `number` | `10` | None | The minimum number of lines changed (insertions + deletions) to qualify for an LLM summarization call. |
-| `maxSummaryWords` | `number` | `150` | None | The maximum word count enforced on LLM summary outputs. |
+| `maxSummaryWords` | `number` | `250` | None | The maximum word count enforced on LLM summary outputs. |
 
 ### Configuration Example (`.briefed.json` or `~/.briefed.json`)
 
