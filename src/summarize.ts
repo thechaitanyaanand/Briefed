@@ -161,6 +161,28 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
 
     if (config.backend === 'ollama') {
       const apiUrl = config.apiUrl || 'http://localhost:11434';
+      
+      const system = `You are a precise developer assistant. Summarize the git diff.
+You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
+Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
+
+Format:
+FILES: <comma-separated list of directories/files changed>
+ADDED: <key features, modules or code additions, separated by |>
+REMOVED: <key removals or deprecations, separated by |>
+RENAMED: <files renamed, e.g. path/to/old -> path/to/new, separated by |>
+DEPS: <dependency changes or change counts, e.g., "X additions, Y deletions">`;
+
+      const userPrompt = `Git Diff:
+${diff.rawDiff}
+
+List of changed files:
+${diff.files.join('\n')}
+
+Change Statistics:
+Additions: ${diff.additions}
+Deletions: ${diff.deletions}`;
+
       const response = await fetch(`${apiUrl}/api/generate`, {
         method: 'POST',
         headers: {
@@ -168,7 +190,8 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
         },
         body: JSON.stringify({
           model: config.model,
-          prompt,
+          prompt: userPrompt,
+          system,
           stream: false,
           options: { num_predict: 1000 }
         }),

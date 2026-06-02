@@ -191,7 +191,8 @@ describe('summarize.ts', () => {
       expect(options.headers).toEqual({ 'Content-Type': 'application/json' });
       const body = JSON.parse(options.body);
       expect(body.model).toBe('custom-llama');
-      expect(body.prompt).toContain('Summarize the following git diff.');
+      expect(body.system).toContain('You are a precise developer assistant.');
+      expect(body.prompt).toContain('Git Diff:');
       expect(body.stream).toBe(false);
       expect(body.options).toEqual({ num_predict: 1000 });
     });
