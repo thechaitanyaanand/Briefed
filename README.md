@@ -222,16 +222,30 @@ jobs:
           node-version: 18
           cache: 'npm'
 
+      - name: Check API Keys availability
+        id: check-keys
+        shell: bash
+        run: |
+          if [ -n "$GEMINI_API" ] || [ -n "$BRIEFED_API" ] || [ -n "$ANTHROPIC_API" ]; then
+            echo "has_keys=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_keys=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API_KEY }}
+          BRIEFED_API: ${{ secrets.BRIEFED_API_KEY }}
+          ANTHROPIC_API: ${{ secrets.ANTHROPIC_API_KEY }}
+
       - name: Install Briefed
-        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
+        if: steps.check-keys.outputs.has_keys == 'true'
         run: npm install -g briefed-cli
 
       - name: Set ORIG_HEAD manually
-        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
+        if: steps.check-keys.outputs.has_keys == 'true'
         run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
 
       - name: Run briefed
-        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
+        if: steps.check-keys.outputs.has_keys == 'true'
         run: briefed run
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
@@ -239,7 +253,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Check and commit context changes
-        if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
+        if: steps.check-keys.outputs.has_keys == 'true'
         run: |
           CHANGED=$(git diff --name-only | grep -E '^(CLAUDE\.md|AGENTS\.md|\.github/copilot-instructions\.md)$' | head -1)
           if [ -n "$CHANGED" ]; then
