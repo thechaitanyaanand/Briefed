@@ -1,6 +1,6 @@
 {
   "name": "briefed-cli",
-  "version": "0.9.0-beta.4",
+  "version": "0.9.0-beta.5",
   "description": "AI-powered git context synchronizer — auto-updates CLAUDE.md, AGENTS.md, and AI context files after every git pull or merge",
   "author": "Chaitanya Anand",
   "license": "MIT",
