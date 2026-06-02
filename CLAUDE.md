@@ -6,12 +6,20 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T18:23:03.080Z] b72c2c04109b35e01481b77d4e7cce5fee95aea0 (master)
+FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json
+ADDED: Version 0.9.0-beta.6 reference in documentation and package.json
+REMOVED: Version 0.9.1 reference from documentation and package.json
+RENAMED:
+DEPS: 7 additions, 7 deletions
+
 ## [2026-06-02T17:26:38.455Z] 42dbeaa2d58f0640aff52724856881e2a7abbfe0 (master)
-FILES: .github/workflows/briefed-context.yml, README.md, docs/ci-cd.html
 ADDED: GitHub Actions step to check for API key availability (GEMINI, BRIEFED, ANTHROPIC) and output a `has_keys` flag|New conditional logic based on `has_keys` flag for several workflow steps
 REMOVED: Direct inline checks for API key presence from multiple GitHub Actions step conditions
 RENAMED:
 DEPS: 55 additions, 9 deletions
+
+FILES: .github/workflows/briefed-context.yml, README.md, docs/ci-cd.html
 
 ## [2026-06-02T16:35:50.594Z] 6c9e8a5c51b27cdb8e76eb39dbc30b1eff21bcfc (master)
 ADDED: Detailed explanation of local-first vs. CI/CD workflows for Briefed; instructions for configuring GitHub repository secrets (API keys) for CI/CD automation; npm cache added to Node.js setup in GitHub Action.
@@ -71,9 +79,4 @@ Here are the step-by-step changes based on your request:
 These changes ensure that Briefed's TypeScript implementation can handle longer summaries while maintaining proper type definitions and test coverage.
 
 FILES: package-lock.json, package.json, src/__tests__/summarize.test.ts, src/config.ts, src/summarize.ts
-
-## [2026-06-01T23:53:51.596Z] 52d60d237c9fd7cd95ebac94c2a4c2659d4e444a (master)
-DEPS: 2 insertions, 2 deletions
-
-FILES: src/ (config.ts, summarize.ts)
 <!-- BRIEFED_END -->
