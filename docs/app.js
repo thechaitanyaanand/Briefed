@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tooltip = document.getElementById('copy-tooltip');
 
   function copyText() {
-    const textToCopy = 'npm install -g briefed';
+    const textToCopy = 'npm install -g briefed-cli';
     navigator.clipboard.writeText(textToCopy).then(() => {
       if (tooltip) {
         tooltip.style.display = 'block';
