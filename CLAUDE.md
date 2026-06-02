@@ -6,6 +6,10 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T00:22:41.245Z] 605e556a3db8ddea81a8a030adb661444b9a0021 (master)
+FILES: docs/ (ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html)
+DEPS: 6 insertions, 6 deletions
+
 ## [2026-06-02T00:01:02.183Z] bc0d6d7a197b65c79ca758ffe89d7283a65ef808
 Here are the step-by-step changes based on your request:
 
@@ -28,9 +32,12 @@ These changes ensure that Briefed's TypeScript implementation can handle longer 
 FILES: package-lock.json, package.json, src/__tests__/summarize.test.ts, src/config.ts, src/summarize.ts
 
 ## [2026-06-01T23:53:51.596Z] 52d60d237c9fd7cd95ebac94c2a4c2659d4e444a (master)
-FILES: src/ (config.ts, summarize.ts)
 DEPS: 2 insertions, 2 deletions
 
+FILES: src/ (config.ts, summarize.ts)
+
 ## [2026-06-01T23:52:27.499Z] dff0d69a52e0b969a7296078c03c3f92b7a6c49f
+
+
 FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package-lock.json, package.json, src/__tests__/summarize.test.ts, src/summarize.ts
 <!-- BRIEFED_END -->
