@@ -6,12 +6,20 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T17:26:38.455Z] 42dbeaa2d58f0640aff52724856881e2a7abbfe0 (master)
+FILES: .github/workflows/briefed-context.yml, README.md, docs/ci-cd.html
+ADDED: GitHub Actions step to check for API key availability (GEMINI, BRIEFED, ANTHROPIC) and output a `has_keys` flag|New conditional logic based on `has_keys` flag for several workflow steps
+REMOVED: Direct inline checks for API key presence from multiple GitHub Actions step conditions
+RENAMED:
+DEPS: 55 additions, 9 deletions
+
 ## [2026-06-02T16:35:50.594Z] 6c9e8a5c51b27cdb8e76eb39dbc30b1eff21bcfc (master)
-FILES: README.md
 ADDED: Detailed explanation of local-first vs. CI/CD workflows for Briefed; instructions for configuring GitHub repository secrets (API keys) for CI/CD automation; npm cache added to Node.js setup in GitHub Action.
 REMOVED: General introductory sentence about CI/CD deployment replaced by more detailed workflow explanations.
 RENAMED:
 DEPS: 32 additions, 3 deletions
+
+FILES: README.md
 
 ## [2026-06-02T16:19:29.817Z] 76057f32d11f3f048c883fa894f77debbdf0d506 (master)
 DEPS: 21 insertions, 1 deletions
@@ -68,9 +76,4 @@ FILES: package-lock.json, package.json, src/__tests__/summarize.test.ts, src/con
 DEPS: 2 insertions, 2 deletions
 
 FILES: src/ (config.ts, summarize.ts)
-
-## [2026-06-01T23:52:27.499Z] dff0d69a52e0b969a7296078c03c3f92b7a6c49f
-
-
-FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package-lock.json, package.json, src/__tests__/summarize.test.ts, src/summarize.ts
 <!-- BRIEFED_END -->
