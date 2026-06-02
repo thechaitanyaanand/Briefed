@@ -172,11 +172,29 @@ Best for advanced semantic understanding and precise structured summaries.
 
 ---
 
+## Local-First vs. CI/CD Workflows
+
+Briefed is designed primarily as a **local-first** developer tool, but it also supports optional **CI/CD automation** to fit any team setup:
+
+### Option A: Local-First Workflow (Default & Recommended)
+By default, all AI context file updates happen completely offline and private to your development machine:
+* **Disk-Only Updates:** When you run `git pull`, `git merge`, or `git rebase` locally, Briefed's Git hooks automatically run `briefed run` and update `CLAUDE.md` on your disk.
+* **No Automated Commits:** Briefed **never** stages or commits these changes automatically locally. This ensures your local Git history remains 100% clean and under your control.
+* **Instant Agent Context:** Your local IDE agent (Cursor, Claude Code, or Antigravity) immediately sees the beautiful, rich summaries in `CLAUDE.md` as you code.
+* **Privacy:** All API keys remain securely inside your local processes or your gitignored `.briefed.json` file.
+
+### Option B: CI/CD Automation Workflow (Optional)
+If you are working in a team and want to guarantee that your remote GitHub repository's default branch (e.g. `main`) always has an updated `CLAUDE.md` even when pull requests are merged directly through the GitHub web UI, you can deploy Briefed as a GitHub Action.
+
+When deployed as an Action, the cloud runner executes `briefed run` upon pushes to `main`, auto-detects changes, and commits the updated context file back to your repository under the name `github-actions[bot]`.
+
+---
+
 ## GitHub Action Setup
 
-Deploy Briefed on CI/CD pipelines to ensure your project's context remains up-to-date even when pull requests are merged directly through the GitHub UI.
+To set up automated remote updates on GitHub:
 
-Create a file named `.github/workflows/briefed.yml`:
+1. Create a file named `.github/workflows/briefed.yml` in your repository:
 
 ```yaml
 name: Briefed Context Update
@@ -196,12 +214,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Compares previous commit (HEAD^) with current commit (HEAD)
+          fetch-depth: 2  # Fetches previous history to compare HEAD~1 with HEAD
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'
 
       - name: Install Briefed
         run: npm install -g briefed-cli
@@ -227,6 +246,16 @@ jobs:
             git push
           fi
 ```
+
+### 🔑 Configuring Repository Secrets for CI/CD
+Since gitignored files like `.briefed.json` are private and **never committed to your repository**, the GitHub Actions cloud runner cannot read your local API key.
+
+For the runner to successfully invoke Gemini or Claude instead of falling back to a mechanical summary, you must configure your API key as a secure **GitHub Secret**:
+1. On GitHub, navigate to your repository's homepage.
+2. Click **Settings** ➡️ **Secrets and variables** ➡️ **Actions** in the sidebar.
+3. Click **New repository secret**.
+4. Name the secret **`GEMINI_API_KEY`** (or `ANTHROPIC_API_KEY`/`BRIEFED_API_KEY`) and paste your API key as the value.
+5. Click **Add secret**.
 
 ---
 
