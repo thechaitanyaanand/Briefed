@@ -6,9 +6,17 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T16:35:50.594Z] 6c9e8a5c51b27cdb8e76eb39dbc30b1eff21bcfc (master)
+FILES: README.md
+ADDED: Detailed explanation of local-first vs. CI/CD workflows for Briefed; instructions for configuring GitHub repository secrets (API keys) for CI/CD automation; npm cache added to Node.js setup in GitHub Action.
+REMOVED: General introductory sentence about CI/CD deployment replaced by more detailed workflow explanations.
+RENAMED:
+DEPS: 32 additions, 3 deletions
+
 ## [2026-06-02T16:19:29.817Z] 76057f32d11f3f048c883fa894f77debbdf0d506 (master)
-FILES: src/ (summarize.test.ts, summarize.ts)
 DEPS: 21 insertions, 1 deletions
+
+FILES: src/ (summarize.test.ts, summarize.ts)
 
 ## [2026-06-02T16:12:29.335Z] 4b5415f392868fde449f3b2e1a6fe03326752ee5 (master)
 DEPS: 52 insertions, 11 deletions
