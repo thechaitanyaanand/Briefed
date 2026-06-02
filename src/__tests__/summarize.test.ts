@@ -559,5 +559,24 @@ describe('summarize.ts', () => {
       const output = await summarize({ diff, config: defaultConfig });
       expect(output.entry.summary).toBe('');
     });
+
+    it('should NOT strip literal <think> tags if they appear in the middle of a non-thinking response', async () => {
+      const responseWithLiteral = 'FILES: src/git.ts\nADDED: added explanation for <think> stripping';
+      const diff: DiffResult = {
+        ...emptyDiff,
+        files: ['src/git.ts'],
+        filesByDir: { src: ['src/git.ts'] },
+        additions: 15,
+        isEmpty: false
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: responseWithLiteral })
+      });
+
+      const output = await summarize({ diff, config: defaultConfig });
+      expect(output.entry.summary).toBe('FILES: src/git.ts\nADDED: added explanation for <think> stripping');
+    });
   });
 });
