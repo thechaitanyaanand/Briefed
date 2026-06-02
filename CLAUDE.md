@@ -6,9 +6,14 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-02T16:19:29.817Z] 76057f32d11f3f048c883fa894f77debbdf0d506 (master)
+FILES: src/ (summarize.test.ts, summarize.ts)
+DEPS: 21 insertions, 1 deletions
+
 ## [2026-06-02T16:12:29.335Z] 4b5415f392868fde449f3b2e1a6fe03326752ee5 (master)
-FILES: .github/ (briefed-context.yml) | src/ (config.test.ts, config.ts, summarize.ts)
 DEPS: 52 insertions, 11 deletions
+
+FILES: .github/ (briefed-context.yml) | src/ (config.test.ts, config.ts, summarize.ts)
 
 ## [2026-06-02T15:43:19.768Z] f4a0a77aa09f07aa61fcec25d01f6d594bf66650 (master)
 DEPS: 36 insertions, 6 deletions
