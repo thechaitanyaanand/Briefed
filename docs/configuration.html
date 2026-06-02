@@ -75,10 +75,13 @@
   "apiUrl": "http://localhost:11434",
   "window": {
     "days": 7,
-    "entries": 10
+    "entries": 10,
+    "maxTotalWords": 1000
   },
   "ignored": [
     "*.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
     "dist/",
     "node_modules/",
     "coverage/"
@@ -116,16 +119,17 @@
         <ul>
           <li><code>window.days</code> (Type: <code>number</code> | Default: <code>7</code>): Older entries beyond these days are deleted automatically.</li>
           <li><code>window.entries</code> (Type: <code>number</code> | Default: <code>10</code>): Keeps the latest N entries, deleting oldest logs when exceeded.</li>
+          <li><code>window.maxTotalWords</code> (Type: <code>number</code> | Default: <code>1000</code>): The maximum cumulative words allowed across all combined entries. Older entries are pruned dynamically to strictly bound context file footprints.</li>
         </ul>
         </p>
 
-        <h3>5. <code>ignored</code> (Type: <code>string[]</code> | Default: <code>["*.lock", "dist/", "*.map", "*.min.js", "*.min.css"]</code>)</h3>
+        <h3>5. <code>ignored</code> (Type: <code>string[]</code> | Default: <code>["*.lock", "package-lock.json", "pnpm-lock.yaml", "dist/", "*.map", "*.min.js", "*.min.css"]</code>)</h3>
         <p>A list of glob matches. Files fitting these patterns are ignored and discarded during git diff parsing, preventing lockfile updates or compiled folder outputs from bloating token usage.</p>
 
         <h3>6. <code>minDiffLines</code> (Type: <code>number</code> | Default: <code>10</code>)</h3>
         <p>The total number of changed lines (insertions + deletions) below which Briefed skips LLM summaries completely, instantly writing mechanical summaries locally to save API quotas and compute time.</p>
 
-        <h3>7. <code>maxSummaryWords</code> (Type: <code>number</code> | Default: <code>150</code>)</h3>
+        <h3>7. <code>maxSummaryWords</code> (Type: <code>number</code> | Default: <code>250</code>)</h3>
         <p>Enforces a maximum word-count cap on LLM response summaries. If the returned summary exceeds this limit, Briefed iterates backward and prunes content at the last complete line boundary to keep log lists concise.</p>
 
         <div class="brutal-callout callout-violet">
