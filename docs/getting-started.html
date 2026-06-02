@@ -118,6 +118,30 @@ set GEMINI_API_KEY=your-google-studio-api-key</code></pre>
           <p class="callout-body">Briefed works <strong>locally via Git hooks</strong> — that's the primary mechanism. GitHub Actions is only useful if your team merges PRs through the GitHub web UI and wants the context file committed back to the repo centrally. For most developers using Briefed locally, CI setup is not needed. See the <a href="ci-cd.html">CI/CD Integration guide</a> if you need it.</p>
         </div>
 
+      <!-- Agentic IDE Prompt Section -->
+      <section class="brutal-section" style="margin-top: 3rem; padding-top: 2rem; border-top: 4px solid var(--brutal-black);">
+        <h2>🤖 Custom Rules for Agentic IDEs (Cursor, Windsurf, Claude Code)</h2>
+        <div class="brutal-callout callout-violet">
+          <div class="callout-title">💡 Why This Prompt is Vital</div>
+          <p class="callout-body">
+            By default, when your AI assistant (like Claude Code in terminal or Cursor in editor) boots up, it has no native awareness that Briefed is running git hooks and maintaining a live chronological history in your workspace context files. 
+            <br><br>
+            Feeding this <strong>System Instruction Directive</strong> into your agent's custom rules (e.g. <code>.cursorrules</code>, Claude's custom prompt, or your global IDE rules) instructs the agent to automatically parse the Briefed block. This prevents the agent from running expensive, redundant <code>git diff</code> commands (saving tokens and API latency) and guarantees <strong>instant, cross-agent memory alignment</strong>!
+          </p>
+        </div>
+
+        <p>Copy and paste the exact rules directive block below into your global custom instructions, <code>.cursorrules</code>, or Claude Code system prompts:</p>
+        <pre><code># Git Context Alignment (Briefed CLI)
+This project utilizes the Briefed CLI tool, which automatically updates the active AI context file (e.g. CLAUDE.md) after every \`git pull\`, merge, or rebase.
+
+## Instructions for the AI Agent:
+1. Always parse the dated Git context blocks written inside the \`<!-- BRIEFED_START -->\` and \`<!-- BRIEFED_END -->\` markers in your context file to keep your short-term memory aligned with the latest workspace state.
+2. Do not attempt to run manual git diffs or git logs to understand recent pull histories; instead, inspect the structured logs inside the context markers.
+3. The context log is bounded dynamically under a strict \`maxTotalWords\` ceiling (~1000 words) to protect your context window. Parse only the active entries between the start and end markers.
+4. Entries have been sanitized client-side of any internal reasoning (\`&lt;think&gt;\`) blocks and lockfile bloat, leaving only high-signal category blocks (\`FILES\`, \`ADDED\`, \`REMOVED\`, \`RENAMED\`, \`DEPS\`).
+5. Use this structural information to instantly grasp which endpoints, APIs, or components were recently introduced or deprecated, ensuring all code suggestions align 100% with the latest codebase updates.</code></pre>
+      </section>
+
     </div>
   </main>
 
