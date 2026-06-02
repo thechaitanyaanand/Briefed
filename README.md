@@ -210,6 +210,7 @@ permissions:
 jobs:
   briefed-context:
     runs-on: ubuntu-latest
+    if: ${{ secrets.GEMINI_API_KEY != '' || secrets.BRIEFED_API_KEY != '' || secrets.ANTHROPIC_API_KEY != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
