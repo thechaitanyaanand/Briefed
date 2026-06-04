@@ -4,7 +4,10 @@ Briefed bridges the AI context gap for modern developer tools by dynamically tra
 
 Running as a zero-dependency CLI or post-merge/post-rewrite Git hook, Briefed captures structural diffs between `ORIG_HEAD` and `HEAD`, groups directory-level alterations, and uses LLM backends (or mechanical fallbacks) to generate context-rich, word-bounded updates so your AI assistants remain continuously aligned without manual context-dumping.
 
----
+
+<div align="center">
+  <img width="914" height="222" alt="Screenshot 2026-06-04 201819" src="https://github.com/user-attachments/assets/d553d8c2-5551-4969-8868-2721315983e1" />
+</div>
 
 ## Features
 
