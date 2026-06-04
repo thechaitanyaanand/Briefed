@@ -350,5 +350,40 @@ describe('config.ts', () => {
         });
       });
     });
+
+    describe('target path security validation', () => {
+      it('should throw security error if target path is resolved outside workspace directory', () => {
+        const userConfig = {
+          target: '../outside.md'
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+        expect(() => getConfig(TEST_DIR)).toThrowError(
+          'Security Error: Target path must reside within the workspace directory.'
+        );
+      });
+
+      it('should throw security error if target path is an absolute path outside workspace directory', () => {
+        const externalPath = path.resolve(TEST_DIR, '../../external.md');
+        const userConfig = {
+          target: externalPath
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+        expect(() => getConfig(TEST_DIR)).toThrowError(
+          'Security Error: Target path must reside within the workspace directory.'
+        );
+      });
+
+      it('should allow target path that resolves inside the workspace directory', () => {
+        const userConfig = {
+          target: 'inside/context.md'
+        };
+        fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
+
+        const config = getConfig(TEST_DIR);
+        expect(config.target).toBe(path.resolve(TEST_DIR, 'inside/context.md'));
+      });
+    });
   });
 });

@@ -123,7 +123,12 @@ export function getConfig(cwd?: string): BriefedConfig {
   if (merged.target === 'auto') {
     merged.target = resolveTargetFile(actualCwd);
   } else {
-    merged.target = path.resolve(actualCwd, merged.target);
+    const resolvedTarget = path.resolve(actualCwd, merged.target);
+    const relative = path.relative(actualCwd, resolvedTarget);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error('Security Error: Target path must reside within the workspace directory.');
+    }
+    merged.target = resolvedTarget;
   }
 
   // Auto-detect backend if not explicitly set in local or global configs

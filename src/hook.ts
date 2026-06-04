@@ -9,7 +9,7 @@ if command -v briefed >/dev/null 2>&1; then
 elif [ -x "./node_modules/.bin/briefed" ]; then
   ./node_modules/.bin/briefed run
 else
-  npx --yes briefed run 2>/dev/null
+  npx --yes --package=briefed-cli briefed run 2>/dev/null
 fi
 exit 0
 `;
@@ -23,7 +23,7 @@ if command -v briefed >/dev/null 2>&1; then
 elif [ -x "./node_modules/.bin/briefed" ]; then
   ./node_modules/.bin/briefed run
 else
-  npx --yes briefed run 2>/dev/null
+  npx --yes --package=briefed-cli briefed run 2>/dev/null
 fi
 exit 0
 `;
@@ -38,7 +38,7 @@ if command -v briefed >/dev/null 2>&1; then
 elif [ -x "./node_modules/.bin/briefed" ]; then
   ./node_modules/.bin/briefed run
 else
-  npx --yes briefed run 2>/dev/null
+  npx --yes --package=briefed-cli briefed run 2>/dev/null
 fi`
   },
   {
@@ -51,17 +51,31 @@ if command -v briefed >/dev/null 2>&1; then
 elif [ -x "./node_modules/.bin/briefed" ]; then
   ./node_modules/.bin/briefed run
 else
-  npx --yes briefed run 2>/dev/null
+  npx --yes --package=briefed-cli briefed run 2>/dev/null
 fi`
   }
 ];
 
-function findGitDir(cwd: string): string {
+function findGitPaths(cwd: string): { gitDir: string; projectRoot: string } {
   let dir = path.resolve(cwd);
   while (true) {
     const gitPath = path.join(dir, '.git');
     if (fs.existsSync(gitPath)) {
-      return gitPath;
+      const stat = fs.statSync(gitPath);
+      if (stat.isFile()) {
+        const content = fs.readFileSync(gitPath, 'utf-8').trim();
+        const match = content.match(/^gitdir:\s*(.+)$/);
+        if (match) {
+          return {
+            gitDir: path.resolve(dir, match[1]),
+            projectRoot: dir
+          };
+        }
+      }
+      return {
+        gitDir: gitPath,
+        projectRoot: dir
+      };
     }
     const parent = path.dirname(dir);
     if (parent === dir) {
@@ -78,8 +92,7 @@ function findGitDir(cwd: string): string {
  */
 export function install(cwd?: string): { installed: string[], skipped: string[], warnings: string[] } {
   const actualCwd = cwd || process.cwd();
-  const gitDir = findGitDir(actualCwd);
-  const projectRoot = path.dirname(gitDir);
+  const { gitDir, projectRoot } = findGitPaths(actualCwd);
 
   const huskyDir = path.join(projectRoot, '.husky');
   const hasHusky = fs.existsSync(huskyDir) && fs.statSync(huskyDir).isDirectory();
@@ -140,8 +153,7 @@ export function install(cwd?: string): { installed: string[], skipped: string[],
  */
 export function uninstall(cwd?: string): void {
   const actualCwd = cwd || process.cwd();
-  const gitDir = findGitDir(actualCwd);
-  const projectRoot = path.dirname(gitDir);
+  const { gitDir, projectRoot } = findGitPaths(actualCwd);
 
   const dirsToCheck: string[] = [];
 

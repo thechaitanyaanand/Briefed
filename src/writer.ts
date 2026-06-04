@@ -142,7 +142,7 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
     }
   }
   if (!acquired) {
-    console.warn(`Warning: Could not acquire lock on ${lockPath} after 5 attempts. Proceeding...`);
+    throw new Error(`Could not acquire lock on ${lockPath} after 5 attempts. Aborting write operation.`);
   }
 
   try {

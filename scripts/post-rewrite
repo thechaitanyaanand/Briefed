@@ -7,6 +7,6 @@ if command -v briefed >/dev/null 2>&1; then
 elif [ -x "./node_modules/.bin/briefed" ]; then
   ./node_modules/.bin/briefed run
 else
-  npx --yes briefed run 2>/dev/null
+  npx --yes --package=briefed-cli briefed run 2>/dev/null
 fi
 exit 0

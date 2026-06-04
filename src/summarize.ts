@@ -157,7 +157,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
   let backendUsed: 'ollama' | 'anthropic' | 'gemini' | 'none' = config.backend;
 
   try {
-    const prompt = constructPrompt(diff, config.backend !== 'ollama');
+    const prompt = constructPrompt(diff, true);
 
     if (config.backend === 'ollama') {
       const apiUrl = config.apiUrl || 'http://localhost:11434';

@@ -321,6 +321,28 @@ Some middle text.
       expect(content).toContain('<!-- BRIEFED_END -->');
       expect(content).toContain('abcdef');
     });
+
+    it('should throw an error and abort if the target lock file is held by another process', () => {
+      const lockPath = `${TEST_FILE}.lock`;
+      fs.writeFileSync(lockPath, '99999', 'utf-8');
+
+      const entry: ContextEntry = {
+        date: '2026-06-01T12:00:00Z',
+        commitHash: 'abcdef',
+        summary: 'New changes that should be aborted',
+        filesChanged: ['src/a.ts'],
+      };
+
+      try {
+        expect(() => writeEntry(entry, DEFAULT_CONFIG)).toThrowError(
+          `Could not acquire lock on ${lockPath} after 5 attempts. Aborting write operation.`
+        );
+      } finally {
+        if (fs.existsSync(lockPath)) {
+          fs.unlinkSync(lockPath);
+        }
+      }
+    });
   });
 
   describe('getLastEntry', () => {

@@ -164,4 +164,29 @@ describe('hook.ts', () => {
     expect(contentAfterUninstall).not.toContain('# BRIEFED_HOOK_APPENDED_START');
     expect(contentAfterUninstall).toBe(originalContent);
   });
+
+  it('should resolve hooks inside worktree/submodule directory where .git is a file pointer', () => {
+    const targetFolder = path.join(TEST_DIR, 'submodule-folder');
+    fs.mkdirSync(targetFolder, { recursive: true });
+    
+    const realGitDir = path.join(TEST_DIR, 'real-git-dir');
+    const realHooksDir = path.join(realGitDir, 'hooks');
+    fs.mkdirSync(realHooksDir, { recursive: true });
+    
+    fs.writeFileSync(path.join(targetFolder, '.git'), `gitdir: ${path.resolve(realGitDir)}\n`, 'utf-8');
+    
+    const result = install(targetFolder);
+    
+    expect(result.installed).toContain('post-merge');
+    expect(result.installed).toContain('post-rewrite');
+    
+    const postMergePath = path.join(realHooksDir, 'post-merge');
+    const postRewritePath = path.join(realHooksDir, 'post-rewrite');
+    
+    expect(fs.existsSync(postMergePath)).toBe(true);
+    expect(fs.existsSync(postRewritePath)).toBe(true);
+    
+    const mergeContent = fs.readFileSync(postMergePath, 'utf-8');
+    expect(mergeContent).toContain('npx --yes --package=briefed-cli briefed run 2>/dev/null');
+  });
 });
