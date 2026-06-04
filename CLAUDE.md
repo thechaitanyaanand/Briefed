@@ -6,12 +6,20 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-04T14:20:24.206Z] d9b2bb5cfa61ecc9266e87e2207cf3ed15d86f53 (master)
+FILES: scripts/post-merge,scripts/post-rewrite,src/__tests__/config.test.ts,src/__tests__/hook.test.ts,src/__tests__/writer.test.ts,src/config.ts,src/hook.ts,src/summarize.ts,src/writer.ts
+ADDED: Security validation for configuration target paths to prevent writing outside the workspace|Improved handling of Git hooks installation in worktrees/submodules (.git file pointers)|Lock file contention check and error handling for write operations to prevent concurrent write issues|Explicit package specification (`--package=briefed-cli`) in npx commands within Git hook scripts|Unit tests for target path security, worktree hook resolution, and lock file handling
+REMOVED: Less specific `npx briefed run` command invocation in git hooks|Prior target path resolution logic lacking security validation
+RENAMED:
+DEPS: 114 insertions, 15 deletions
+
 ## [2026-06-02T18:23:03.080Z] b72c2c04109b35e01481b77d4e7cce5fee95aea0 (master)
-FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json
 ADDED: Version 0.9.0-beta.6 reference in documentation and package.json
 REMOVED: Version 0.9.1 reference from documentation and package.json
 RENAMED:
 DEPS: 7 additions, 7 deletions
+
+FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json
 
 ## [2026-06-02T17:26:38.455Z] 42dbeaa2d58f0640aff52724856881e2a7abbfe0 (master)
 ADDED: GitHub Actions step to check for API key availability (GEMINI, BRIEFED, ANTHROPIC) and output a `has_keys` flag|New conditional logic based on `has_keys` flag for several workflow steps
@@ -58,25 +66,4 @@ FILES: ./ (PROMPT.md, README.md)
 DEPS: 6 insertions, 6 deletions
 
 FILES: docs/ (ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html)
-
-## [2026-06-02T00:01:02.183Z] bc0d6d7a197b65c79ca758ffe89d7283a65ef808
-Here are the step-by-step changes based on your request:
-
-1. **Update `package-lock.json`:**
-   - Bump version from 0.2.3 to 0.3.0.
-   - Add a new devDependencies.json with the updated tsconfig.json.
-
-2. **Modify `package.json`:**
-   - Add "@types/briefed" as a dependency under devDependencies.
-
-3. **Update Test Files:**
-   - In `src/__tests__/summarize.test.ts`, add specific test cases to enforce the 250-word limit.
-   - Include both tests that check successful summarization and edge cases where reasoning blocks should be removed.
-
-4. **Adjust Configuration Values:**
-   - In both `src/config.ts` and `src/summarize.ts`, update the default maximum summary words from 150 to 250.
-
-These changes ensure that Briefed's TypeScript implementation can handle longer summaries while maintaining proper type definitions and test coverage.
-
-FILES: package-lock.json, package.json, src/__tests__/summarize.test.ts, src/config.ts, src/summarize.ts
 <!-- BRIEFED_END -->
