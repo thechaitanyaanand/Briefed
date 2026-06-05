@@ -6,9 +6,17 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-05T14:50:58.976Z] da28405eac76af31b91332dde5de145a64e8a21f (master)
+FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json
+ADDED: Project version updated to 0.9.0-beta.8 | Documentation updated to reflect version 0.9.0-beta.8
+REMOVED: Previous project version 0.9.0-beta.7 | Documentation reflecting version 0.9.0-beta.7
+RENAMED:
+DEPS: Project version bumped from 0.9.0-beta.7 to 0.9.0-beta.8 | 7 additions, 7 deletions
+
 ## [2026-06-05T14:48:35.279Z] bbb58a2e6b5195399aba1268c46f478d37186eab (made)
-FILES: ./ (README.md)
 DEPS: 4 insertions, 1 deletions
+
+FILES: ./, (README.md)
 
 ## [2026-06-04T17:17:03.736Z] df7b34a1a4d0d6cdf589fa16b1c1957194e2f9a2 (master)
 DEPS: 4 insertions, 1 deletions
@@ -61,9 +69,4 @@ FILES: .github/ (briefed-context.yml) | src/ (config.test.ts, config.ts, summari
 DEPS: 36 insertions, 6 deletions
 
 FILES: ./, (README.md), |, docs/, (getting-started.html)
-
-## [2026-06-02T15:31:18.982Z] cffb4f615b1352ed7b1690b96cb6fd2f03886ed6 (master)
-DEPS: 7 insertions, 3 deletions
-
-FILES: docs/, (configuration.html)
 <!-- BRIEFED_END -->
