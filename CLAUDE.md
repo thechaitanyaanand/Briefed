@@ -6,12 +6,17 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-04T17:17:03.736Z] df7b34a1a4d0d6cdf589fa16b1c1957194e2f9a2 (master)
+FILES: ./ (README.md)
+DEPS: 4 insertions, 1 deletions
+
 ## [2026-06-04T14:20:24.206Z] d9b2bb5cfa61ecc9266e87e2207cf3ed15d86f53 (master)
-FILES: scripts/post-merge,scripts/post-rewrite,src/__tests__/config.test.ts,src/__tests__/hook.test.ts,src/__tests__/writer.test.ts,src/config.ts,src/hook.ts,src/summarize.ts,src/writer.ts
 ADDED: Security validation for configuration target paths to prevent writing outside the workspace|Improved handling of Git hooks installation in worktrees/submodules (.git file pointers)|Lock file contention check and error handling for write operations to prevent concurrent write issues|Explicit package specification (`--package=briefed-cli`) in npx commands within Git hook scripts|Unit tests for target path security, worktree hook resolution, and lock file handling
 REMOVED: Less specific `npx briefed run` command invocation in git hooks|Prior target path resolution logic lacking security validation
 RENAMED:
 DEPS: 114 insertions, 15 deletions
+
+FILES: scripts/post-merge, scripts/post-rewrite, src/__tests__/config.test.ts, src/__tests__/hook.test.ts, src/__tests__/writer.test.ts, src/config.ts, src/hook.ts, src/summarize.ts, src/writer.ts
 
 ## [2026-06-02T18:23:03.080Z] b72c2c04109b35e01481b77d4e7cce5fee95aea0 (master)
 ADDED: Version 0.9.0-beta.6 reference in documentation and package.json
@@ -61,9 +66,4 @@ FILES: docs/, (configuration.html)
 DEPS: 53 insertions, 2 deletions
 
 FILES: ./ (PROMPT.md, README.md)
-
-## [2026-06-02T00:22:41.245Z] 605e556a3db8ddea81a8a030adb661444b9a0021 (master)
-DEPS: 6 insertions, 6 deletions
-
-FILES: docs/ (ci-cd.html, cli-reference.html, configuration.html, getting-started.html, index.html)
 <!-- BRIEFED_END -->
