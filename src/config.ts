@@ -5,9 +5,8 @@ import { BriefedConfig } from './types.js';
 
 export const DEFAULT_CONFIG: BriefedConfig = {
   target: 'auto',
-  backend: 'ollama',
-  model: 'llama3',
-  apiUrl: 'http://localhost:11434',
+  backend: 'gemini',
+  model: 'gemini-2.5-flash',
   window: { days: 7, entries: 10, maxTotalWords: 1000 },
   ignored: ['*.lock', 'package-lock.json', 'pnpm-lock.yaml', 'dist/', '*.map', '*.min.js', '*.min.css'],
   minDiffLines: 10,

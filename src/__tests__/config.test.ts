@@ -39,9 +39,9 @@ describe('config.ts', () => {
   describe('DEFAULT_CONFIG', () => {
     it('should have standard default values', () => {
       expect(DEFAULT_CONFIG.target).toBe('auto');
-      expect(DEFAULT_CONFIG.backend).toBe('ollama');
-      expect(DEFAULT_CONFIG.model).toBe('llama3');
-      expect(DEFAULT_CONFIG.apiUrl).toBe('http://localhost:11434');
+      expect(DEFAULT_CONFIG.backend).toBe('gemini');
+      expect(DEFAULT_CONFIG.model).toBe('gemini-2.5-flash');
+      expect(DEFAULT_CONFIG.apiUrl).toBeUndefined();
       expect(DEFAULT_CONFIG.window).toEqual({ days: 7, entries: 10, maxTotalWords: 1000 });
       expect(DEFAULT_CONFIG.ignored).toContain('dist/');
       expect(DEFAULT_CONFIG.minDiffLines).toBe(10);
@@ -87,8 +87,8 @@ describe('config.ts', () => {
   describe('getConfig', () => {
     it('should load default config and resolve target to CLAUDE.md (created) when no .briefed.json exists', () => {
       const config = getConfig(TEST_DIR);
-      expect(config.backend).toBe('ollama');
-      expect(config.model).toBe('llama3');
+      expect(config.backend).toBe('gemini');
+      expect(config.model).toBe('gemini-2.5-flash');
       expect(config.target).toBe(path.resolve(TEST_DIR, 'CLAUDE.md'));
     });
 
@@ -123,7 +123,7 @@ describe('config.ts', () => {
       fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), '{ invalid json ');
 
       const config = getConfig(TEST_DIR);
-      expect(config.backend).toBe('ollama'); // still has default backend
+      expect(config.backend).toBe('gemini'); // still has default backend
       expect(config.window.entries).toBe(10); // still has default entries
     });
 

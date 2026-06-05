@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as readline from 'readline';
 import { createRequire } from 'module';
@@ -58,13 +59,13 @@ ${chalk.bold.magenta('==========================================================
 ${chalk.bold.white('Configure your LLM backend:')}
 ${chalk.bold.magenta('================================================================================')}
 
-${chalk.bold.cyan('No LLM (default -- no setup needed):')}
-  Works out of the box. Uses directory groupings and line stats. Fast and free.
-  ${chalk.gray('"backend": "none"')}
-
-${chalk.bold.cyan('Google Gemini (recommended cloud backend):')}
+${chalk.bold.cyan('Google Gemini (default -- recommended cloud backend):')}
   ${chalk.gray('$')} ${chalk.green('export GEMINI_API_KEY="your-key"')}   ${chalk.gray('# or add to ~/.briefed.json')}
   ${chalk.gray('"backend": "gemini", "model": "gemini-2.5-flash"')}
+
+${chalk.bold.cyan('No LLM (local mechanical fallback):')}
+  Uses directory groupings and line stats. Fast and free.
+  ${chalk.gray('"backend": "none"')}
 
 ${chalk.bold.cyan('Anthropic Claude:')}
   ${chalk.gray('$')} ${chalk.green('export ANTHROPIC_API_KEY="your-key"')}
@@ -127,18 +128,28 @@ program
   .action(async (options) => {
     try {
       if (options.interactive) {
-        let currentJson: any = {};
-        const configPath = path.resolve(process.cwd(), '.briefed.json');
-        if (fs.existsSync(configPath)) {
+        let localJson: any = {};
+        const localPath = path.resolve(process.cwd(), '.briefed.json');
+        if (fs.existsSync(localPath)) {
           try {
-            currentJson = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+            localJson = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
           } catch (e) {
-            currentJson = {};
+            localJson = {};
           }
         }
 
-        const defaultTarget = currentJson.target || 'auto';
-        const defaultBackend = currentJson.backend || 'ollama';
+        let globalJson: any = {};
+        const globalPath = path.join(os.homedir(), '.briefed.json');
+        if (fs.existsSync(globalPath)) {
+          try {
+            globalJson = JSON.parse(fs.readFileSync(globalPath, 'utf-8'));
+          } catch (e) {
+            globalJson = {};
+          }
+        }
+
+        const defaultTarget = localJson.target || globalJson.target || 'auto';
+        const defaultBackend = localJson.backend || globalJson.backend || 'gemini';
 
         const targetInput = await askQuestion(`Preferred context file path [default: ${defaultTarget}]: `);
         const target = targetInput || defaultTarget;
@@ -152,12 +163,53 @@ program
           backend = defaultBackend;
         }
 
-        const newConfig = {
-          ...currentJson,
+        let apiKey: string | undefined = undefined;
+        let saveLocation: 'global' | 'local' = 'global';
+
+        if (backend === 'gemini' || backend === 'anthropic') {
+          const currentApiKey = localJson.apiKey || globalJson.apiKey;
+          const apiKeyPrompt = currentApiKey
+            ? `Enter API key (leave empty to keep existing key starting with ${currentApiKey.substring(0, 4)}...): `
+            : `Enter API key (leave empty to skip / use env variable): `;
+          const apiKeyInput = await askQuestion(apiKeyPrompt);
+
+          if (apiKeyInput) {
+            apiKey = apiKeyInput;
+          } else if (currentApiKey) {
+            apiKey = currentApiKey;
+          }
+
+          if (apiKey) {
+            const locInput = await askQuestion(`Save API key to global (~/.briefed.json) or local (.briefed.json) configuration? (global/local) [default: global]: `);
+            const choice = locInput.toLowerCase().trim();
+            saveLocation = (choice === 'local' || choice === 'project') ? 'local' : 'global';
+          }
+        }
+
+        const newLocalConfig = {
+          ...localJson,
           target,
           backend
         };
-        fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2), 'utf-8');
+
+        if (apiKey) {
+          if (saveLocation === 'local') {
+            newLocalConfig.apiKey = apiKey;
+            if (globalJson.apiKey) {
+              delete globalJson.apiKey;
+              fs.writeFileSync(globalPath, JSON.stringify(globalJson, null, 2), 'utf-8');
+            }
+          } else {
+            globalJson.apiKey = apiKey;
+            fs.writeFileSync(globalPath, JSON.stringify(globalJson, null, 2), 'utf-8');
+            console.log(chalk.green(`✓ API key saved globally to ~/.briefed.json`));
+            if (newLocalConfig.apiKey) {
+              delete newLocalConfig.apiKey;
+            }
+          }
+        }
+
+        fs.writeFileSync(localPath, JSON.stringify(newLocalConfig, null, 2), 'utf-8');
         console.log(chalk.green(`✓ Config saved to .briefed.json`));
       }
 

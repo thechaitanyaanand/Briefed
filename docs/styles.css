@@ -2028,4 +2028,125 @@ body {
   }
 }
 
+/* ==========================================
+   PREFERRED SETUP SECTION STYLES
+   ========================================== */
+.preferred-setup-section {
+  max-width: 1200px;
+  margin: 100px auto;
+  padding: 0 40px;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 50px;
+}
+
+.setup-card {
+  background-color: var(--bg-card);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border: var(--border-thick);
+  border-radius: 4px;
+  padding: 40px;
+  box-shadow: var(--shadow-offset);
+  transition: transform 0.2s var(--ease-brutal), box-shadow 0.2s var(--ease-brutal);
+  display: flex;
+  flex-direction: column;
+}
+
+.setup-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: var(--shadow-offset-large);
+}
+
+.card-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: var(--border-medium);
+  border-radius: 4px;
+  margin-bottom: 20px;
+  box-shadow: 2px 2px 0px #000;
+}
+
+.card-badge.green {
+  background-color: var(--neon-green);
+  color: var(--pure-black);
+}
+
+.card-badge.blue {
+  background-color: var(--neon-violet);
+  color: var(--pure-white);
+}
+
+.setup-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  letter-spacing: -0.5px;
+}
+
+.setup-card-desc {
+  color: var(--gray-text);
+  line-height: 1.6;
+  margin-bottom: 25px;
+  flex-grow: 1;
+  font-size: 0.95rem;
+}
+
+.setup-terminal {
+  background-color: #0b0b0d;
+  border: 2px solid var(--pure-black);
+  border-radius: 4px;
+  padding: 20px;
+  font-family: var(--font-mono);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.setup-terminal pre {
+  margin: 0;
+  overflow-x: auto;
+}
+
+.setup-terminal code {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.setup-terminal .comment {
+  color: #6e7681;
+}
+
+.setup-terminal .cmd {
+  color: var(--neon-green);
+}
+
+.setup-terminal .cmd-param {
+  color: var(--accent-yellow);
+}
+
+@media (max-width: 992px) {
+  .setup-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .preferred-setup-section {
+    margin: 60px auto;
+    padding: 0 20px;
+  }
+
+  .setup-card {
+    padding: 30px;
+  }
+}
+
 
