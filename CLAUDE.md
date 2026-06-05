@@ -6,9 +6,14 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
-## [2026-06-04T17:17:03.736Z] df7b34a1a4d0d6cdf589fa16b1c1957194e2f9a2 (master)
+## [2026-06-05T14:48:35.279Z] bbb58a2e6b5195399aba1268c46f478d37186eab (made)
 FILES: ./ (README.md)
 DEPS: 4 insertions, 1 deletions
+
+## [2026-06-04T17:17:03.736Z] df7b34a1a4d0d6cdf589fa16b1c1957194e2f9a2 (master)
+DEPS: 4 insertions, 1 deletions
+
+FILES: ./, (README.md)
 
 ## [2026-06-04T14:20:24.206Z] d9b2bb5cfa61ecc9266e87e2207cf3ed15d86f53 (master)
 ADDED: Security validation for configuration target paths to prevent writing outside the workspace|Improved handling of Git hooks installation in worktrees/submodules (.git file pointers)|Lock file contention check and error handling for write operations to prevent concurrent write issues|Explicit package specification (`--package=briefed-cli`) in npx commands within Git hook scripts|Unit tests for target path security, worktree hook resolution, and lock file handling
@@ -61,9 +66,4 @@ FILES: ./, (README.md), |, docs/, (getting-started.html)
 DEPS: 7 insertions, 3 deletions
 
 FILES: docs/, (configuration.html)
-
-## [2026-06-02T15:30:26.358Z] cd5d34ac9681b9fe6508e584c2661fb55e668489 (master)
-DEPS: 53 insertions, 2 deletions
-
-FILES: ./ (PROMPT.md, README.md)
 <!-- BRIEFED_END -->
