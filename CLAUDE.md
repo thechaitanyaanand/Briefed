@@ -17,12 +17,20 @@
 - **Dynamic Blocks**: Do not manually modify the content between the BRIEFED start and end markers.
 
 <!-- BRIEFED_START -->
+## [2026-06-06T12:44:04.750Z] c3ff29794af1184a15561063a592174f68b7a515 (master)
+FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html
+ADDED: Updated npm package link in documentation footers to 'briefed-cli'
+REMOVED: Outdated npm package link 'briefed' from documentation footers
+RENAMED:
+DEPS: 5 additions, 5 deletions
+
 ## [2026-06-06T12:39:29.985Z] 2eb13fbff1c6032269416725aec1957d4192b37e (master)
-FILES: .github/ISSUE_TEMPLATE/bug_report.md|.github/ISSUE_TEMPLATE/feature_request.md|.github/PULL_REQUEST_TEMPLATE.md|CODE_OF_CONDUCT.md|CONTRIBUTING.md|SECURITY.md
 ADDED: Bug report template|Feature request template|Pull request template|Code of Conduct|Contribution guidelines|Local development setup instructions|Security policy
 REMOVED:
 RENAMED:
 DEPS: 194 insertions, 0 deletions
+
+FILES: .github/ISSUE_TEMPLATE/bug_report.md|.github/ISSUE_TEMPLATE/feature_request.md|.github/PULL_REQUEST_TEMPLATE.md|CODE_OF_CONDUCT.md|CONTRIBUTING.md|SECURITY.md
 
 ## [2026-06-06T12:35:16.530Z] b6062d2117b85e6da902ead4280df63e8abb5f0a (master)
 ADDED: "DEVELOPER'S PREFERRED SETUP" section, including descriptions for Global Gemini Configuration (personal workflow) and CI/CD & GitHub Actions (enterprise team workflow)
@@ -81,9 +89,4 @@ RENAMED:
 DEPS: 32 additions, 3 deletions
 
 FILES: README.md
-
-## [2026-06-02T16:19:29.817Z] 76057f32d11f3f048c883fa894f77debbdf0d506 (master)
-DEPS: 21 insertions, 1 deletions
-
-FILES: src/ (summarize.test.ts, summarize.ts)
 <!-- BRIEFED_END -->
