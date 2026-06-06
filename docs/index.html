@@ -110,6 +110,51 @@
       </div>
     </section>
 
+    <!-- DEVELOPER'S PREFERRED SETUP -->
+    <section class="preferred-setup-section" id="preferred-setup">
+      <h2 class="section-title">DEVELOPER'S PREFERRED SETUP</h2>
+      <p class="section-subtitle">How elite developers configure and run Briefed across personal workflows and enterprise teams.</p>
+
+      <div class="setup-grid">
+        <!-- Card 1: Personal Workflow -->
+        <div class="setup-card personal-setup">
+          <div class="card-badge green">PERSONAL WORKFLOW</div>
+          <h3 class="setup-card-title">Global Gemini Configuration</h3>
+          <p class="setup-card-desc">The ultimate setup for individual developers working across multiple personal projects. Store your Google Gemini API key once in your user root folder to keep all local repositories in sync instantly without committing secrets.</p>
+          <div class="setup-terminal">
+            <div class="terminal-dots">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <pre><code><span class="comment"># 1. Store API key globally in your user root</span>
+<span class="comment"># Saved to ~/.briefed.json automatically:</span>
+<span class="cmd">briefed init <span class="cmd-param">-i</span></span>
+
+<span class="comment"># 2. Key remains completely private and untracked.</span>
+<span class="comment"># Global settings apply to every repo on your machine!</span></code></pre>
+          </div>
+        </div>
+
+        <!-- Card 2: Enterprise Team Workflow -->
+        <div class="setup-card enterprise-setup">
+          <div class="card-badge blue">ENTERPRISE TEAM WORKFLOW</div>
+          <h3 class="setup-card-title">CI/CD & GitHub Actions</h3>
+          <p class="setup-card-desc">Perfect for enterprise engineering teams. When pull requests are merged through the GitHub web UI, the local git hook doesn't run. A simple GitHub Action runs Briefed in the cloud, updates the context file, and commits it back.</p>
+          <div class="setup-terminal">
+            <div class="terminal-dots">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <pre><code><span class="comment"># 1. Add GEMINI_API_KEY as a repository secret</span>
+<span class="comment"># 2. Bundled GitHub Action runs post-merge in cloud</span>
+<span class="comment"># 3. Context stays synchronized across all developers</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- HOW IT WORKS (Vertical circuit grid of 3.5" floppy disk cards) -->
     <section class="how-it-works-section" id="how-it-works">
       <h2 class="section-title">THE ENGINE ARCHITECTURE</h2>
@@ -373,51 +418,6 @@
                 <pre class="telemetry-pre"><code class="code-shell" id="live-shell-preview"></code></pre>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- DEVELOPER'S PREFERRED SETUP -->
-    <section class="preferred-setup-section" id="preferred-setup">
-      <h2 class="section-title">DEVELOPER'S PREFERRED SETUP</h2>
-      <p class="section-subtitle">How elite developers configure and run Briefed across personal workflows and enterprise teams.</p>
-
-      <div class="setup-grid">
-        <!-- Card 1: Personal Workflow -->
-        <div class="setup-card personal-setup">
-          <div class="card-badge green">PERSONAL WORKFLOW</div>
-          <h3 class="setup-card-title">Global Gemini Configuration</h3>
-          <p class="setup-card-desc">The ultimate setup for individual developers working across multiple personal projects. Store your Google Gemini API key once in your user root folder to keep all local repositories in sync instantly without committing secrets.</p>
-          <div class="setup-terminal">
-            <div class="terminal-dots">
-              <span class="terminal-dot red"></span>
-              <span class="terminal-dot yellow"></span>
-              <span class="terminal-dot green"></span>
-            </div>
-            <pre><code><span class="comment"># 1. Store API key globally in your user root</span>
-<span class="comment"># Saved to ~/.briefed.json automatically:</span>
-<span class="cmd">briefed init <span class="cmd-param">-i</span></span>
-
-<span class="comment"># 2. Key remains completely private and untracked.</span>
-<span class="comment"># Global settings apply to every repo on your machine!</span></code></pre>
-          </div>
-        </div>
-
-        <!-- Card 2: Enterprise Team Workflow -->
-        <div class="setup-card enterprise-setup">
-          <div class="card-badge blue">ENTERPRISE TEAM WORKFLOW</div>
-          <h3 class="setup-card-title">CI/CD & GitHub Actions</h3>
-          <p class="setup-card-desc">Perfect for enterprise engineering teams. When pull requests are merged through the GitHub web UI, the local git hook doesn't run. A simple GitHub Action runs Briefed in the cloud, updates the context file, and commits it back.</p>
-          <div class="setup-terminal">
-            <div class="terminal-dots">
-              <span class="terminal-dot red"></span>
-              <span class="terminal-dot yellow"></span>
-              <span class="terminal-dot green"></span>
-            </div>
-            <pre><code><span class="comment"># 1. Add GEMINI_API_KEY as a repository secret</span>
-<span class="comment"># 2. Bundled GitHub Action runs post-merge in cloud</span>
-<span class="comment"># 3. Context stays synchronized across all developers</span></code></pre>
           </div>
         </div>
       </div>
