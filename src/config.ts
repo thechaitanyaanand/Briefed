@@ -40,10 +40,23 @@ export function resolveTargetFile(cwd: string): string {
   }
   const defaultTemplate = `# AI Context
 
-## Briefed CLI Guidelines
-- Run \`briefed run\` to manually synchronize git context or review change stats.
-- Run \`briefed status\` to inspect the latest summarized entry.
-- Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
+This file serves as the context hub for AI agents (Cursor, Claude Code, etc.) to understand your project structure, development commands, and guidelines.
+
+## Project Commands
+*Placeholder: Replace these with your actual project commands!*
+- Build project: \`npm run build\`
+- Run test suite: \`npm test\`
+- Run development server: \`npm run dev\`
+
+## Code Guidelines
+*Placeholder: Add your coding standards and preferences here!*
+- Maintain strict type safety.
+- Write unit tests for new modules.
+
+## Briefed Git Sync
+- Run \`briefed status\` to view the latest change status.
+- Run \`briefed run\` to manually trigger a context synchronization.
+- Git hooks (\`post-merge\` and \`post-rewrite\`) automatically append git changes to this file below. Do not modify the markers.
 
 <!-- BRIEFED_START -->
 <!-- BRIEFED_END -->`;

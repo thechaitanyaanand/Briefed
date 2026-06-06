@@ -1,9 +1,20 @@
 # AI Context
 
-## Briefed CLI Guidelines
-- Run `briefed run` to manually synchronize git context or review change stats.
-- Run `briefed status` to inspect the latest summarized entry.
-- Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
+## Project Commands
+- Build codebase: `npm run build`
+- Run development watch compiler: `npm run dev`
+- Run test suite: `npm run test`
+- Run Vitest in watch mode: `npx vitest`
+- Check Briefed status: `node dist/cli.js status`
+- Manually run Briefed: `node dist/cli.js run`
+
+## Code Guidelines
+- **TypeScript**: Strict mode type safety. Type all variables, function arguments, and return values.
+- **Zero Dependencies**: Minimize external dependencies to keep the CLI footprint lightweight.
+- **Safety & Error Handling**: Never throw unhandled exceptions from git hooks. Catch file errors, fall back to structural diffs, and exit `0` to avoid blocking Git operations.
+- **Tests**: Place all unit test files under `src/__tests__/`. 
+- **Hook Formatting**: Ensure hook templates (`scripts/post-merge` and `scripts/post-rewrite`) are formatted with LF line endings to avoid runtime interpreter issues on Windows.
+- **Dynamic Blocks**: Do not manually modify the content between the BRIEFED start and end markers.
 
 <!-- BRIEFED_START -->
 ## [2026-06-06T12:35:16.530Z] b6062d2117b85e6da902ead4280df63e8abb5f0a (master)
