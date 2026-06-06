@@ -6,12 +6,20 @@
 - Do not manually edit the BRIEFED dynamic blocks below; the post-merge and post-rewrite hooks handle them automatically.
 
 <!-- BRIEFED_START -->
+## [2026-06-06T12:35:16.530Z] b6062d2117b85e6da902ead4280df63e8abb5f0a (master)
+FILES: docs/index.html
+ADDED: "DEVELOPER'S PREFERRED SETUP" section, including descriptions for Global Gemini Configuration (personal workflow) and CI/CD & GitHub Actions (enterprise team workflow)
+REMOVED: The "DEVELOPER'S PREFERRED SETUP" section from its previous location within the file
+RENAMED:
+DEPS: 45 additions, 45 deletions
+
 ## [2026-06-05T14:50:58.976Z] da28405eac76af31b91332dde5de145a64e8a21f (master)
-FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json
 ADDED: Project version updated to 0.9.0-beta.8 | Documentation updated to reflect version 0.9.0-beta.8
 REMOVED: Previous project version 0.9.0-beta.7 | Documentation reflecting version 0.9.0-beta.7
 RENAMED:
 DEPS: Project version bumped from 0.9.0-beta.7 to 0.9.0-beta.8 | 7 additions, 7 deletions
+
+FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json
 
 ## [2026-06-05T14:48:35.279Z] bbb58a2e6b5195399aba1268c46f478d37186eab (made)
 DEPS: 4 insertions, 1 deletions
@@ -64,9 +72,4 @@ FILES: src/ (summarize.test.ts, summarize.ts)
 DEPS: 52 insertions, 11 deletions
 
 FILES: .github/ (briefed-context.yml) | src/ (config.test.ts, config.ts, summarize.ts)
-
-## [2026-06-02T15:43:19.768Z] f4a0a77aa09f07aa61fcec25d01f6d594bf66650 (master)
-DEPS: 36 insertions, 6 deletions
-
-FILES: ./, (README.md), |, docs/, (getting-started.html)
 <!-- BRIEFED_END -->
