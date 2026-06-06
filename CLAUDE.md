@@ -17,12 +17,20 @@
 - **Dynamic Blocks**: Do not manually modify the content between the BRIEFED start and end markers.
 
 <!-- BRIEFED_START -->
+## [2026-06-06T12:39:29.985Z] 2eb13fbff1c6032269416725aec1957d4192b37e (master)
+FILES: .github/ISSUE_TEMPLATE/bug_report.md|.github/ISSUE_TEMPLATE/feature_request.md|.github/PULL_REQUEST_TEMPLATE.md|CODE_OF_CONDUCT.md|CONTRIBUTING.md|SECURITY.md
+ADDED: Bug report template|Feature request template|Pull request template|Code of Conduct|Contribution guidelines|Local development setup instructions|Security policy
+REMOVED:
+RENAMED:
+DEPS: 194 insertions, 0 deletions
+
 ## [2026-06-06T12:35:16.530Z] b6062d2117b85e6da902ead4280df63e8abb5f0a (master)
-FILES: docs/index.html
 ADDED: "DEVELOPER'S PREFERRED SETUP" section, including descriptions for Global Gemini Configuration (personal workflow) and CI/CD & GitHub Actions (enterprise team workflow)
 REMOVED: The "DEVELOPER'S PREFERRED SETUP" section from its previous location within the file
 RENAMED:
 DEPS: 45 additions, 45 deletions
+
+FILES: docs/index.html
 
 ## [2026-06-05T14:50:58.976Z] da28405eac76af31b91332dde5de145a64e8a21f (master)
 ADDED: Project version updated to 0.9.0-beta.8 | Documentation updated to reflect version 0.9.0-beta.8
@@ -78,9 +86,4 @@ FILES: README.md
 DEPS: 21 insertions, 1 deletions
 
 FILES: src/ (summarize.test.ts, summarize.ts)
-
-## [2026-06-02T16:12:29.335Z] 4b5415f392868fde449f3b2e1a6fe03326752ee5 (master)
-DEPS: 52 insertions, 11 deletions
-
-FILES: .github/ (briefed-context.yml) | src/ (config.test.ts, config.ts, summarize.ts)
 <!-- BRIEFED_END -->
