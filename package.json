@@ -37,18 +37,13 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.3.0"
   },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build"
-  },
-  "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^12.1.0",
-    "minimatch": "^9.0.5"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",

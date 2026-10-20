@@ -1,330 +1,154 @@
 # Briefed
 
-Briefed bridges the AI context gap for modern developer tools by dynamically tracking, summarizing, and appending Git changes into your repository's AI context files (such as `CLAUDE.md`, `AGENTS.md`, or `.github/copilot-instructions.md`). 
+**Your AI coding agent finds out what your teammates changed, as soon as you pull.**
 
-Running as a zero-dependency CLI or post-merge/post-rewrite Git hook, Briefed captures structural diffs between `ORIG_HEAD` and `HEAD`, groups directory-level alterations, and uses LLM backends (or mechanical fallbacks) to generate context-rich, word-bounded updates so your AI assistants remain continuously aligned without manual context-dumping.
+Briefed is a zero-dependency CLI that hooks into git. After every `git pull`, merge, rebase or branch switch, it writes a short summary of what changed to `.briefed/context.md`, which `CLAUDE.md`, `AGENTS.md` and `.github/copilot-instructions.md` all reference. It works out of the box with **no API key** (it uses commit messages), and gets smarter with Gemini, Claude or a local Ollama model.
 
+```bash
+npx briefed-cli init     # that's the whole setup
+```
 
 <div align="center">
-  <img width="914" height="222" alt="Screenshot 2026-06-04 201819" src="https://github.com/user-attachments/assets/d553d8c2-5551-4969-8868-2721315983e1" />
+  <img width="914" height="222" alt="Briefed in action" src="https://github.com/user-attachments/assets/d553d8c2-5551-4969-8868-2721315983e1" />
 </div>
+
+## Why not just let the agent run `git log`?
+
+It can, but it won't unless you ask, and a raw log is noisy. Briefed keeps a short note that is **always loaded**, newest first and bounded to ~1000 words. It only contains what changes how the agent should work: renamed modules, new commands, new environment variables, breaking changes. Lockfiles, build output and version bumps are filtered out before anything is summarized.
 
 ## Features
 
-- ⚙️ **Automated Hook Installation**: Standalone or chained integration into your `.husky` or `.git/hooks` directories.
-- 📂 **Target Auto-Detection**: Dynamically resolves target AI documentation in order of priority (`CLAUDE.md` → `AGENTS.md` → `.github/copilot-instructions.md`).
-- 🤖 **Multi-Backend Summarization**: Powered locally by **Ollama**, in the cloud by **Anthropic** or **Google Gemini**, or via structured mechanical heuristics.
-- ⚡ **Smart Skip Check**: Bypasses LLMs on minimal changes (diffs below a configurable line threshold) to save time and tokens.
-- ✂️ **Token-Safe Limits & Truncation**: Automatically limits and truncates massive git diffs (> 8,000 chars) and enforces a strict word cap on LLM outputs using line-boundary pruning.
-- 🛡️ **Non-Blocking Execution**: Safe exit codes guarantee your Git merges, rebases, and pulls are never blocked by LLM downtime or missing network dependencies.
+- **Zero config:** no API key needed. Set `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` and it upgrades to LLM summaries automatically.
+- **Never slows git down:** hooks run in the background, so `git pull` returns immediately. Failures never block git.
+- **No dirty working tree, no merge conflicts:** `.briefed/` is gitignored. Only the one-line link in `CLAUDE.md` is committed.
+- **Every way commits arrive:** `post-merge` (pull/merge), `post-rewrite` (rebase), `post-checkout` (branch switch).
+- **Agent-focused summaries:** the prompt asks for facts that change how an agent should work, not a changelog.
+- **Token-bounded:** a per-file diff budget, a word cap on each summary, and a rolling window on the whole file.
+- **Safe:** secrets are scrubbed from diffs before they're sent to any LLM. Keys are never sent to the wrong provider.
+- **Zero runtime dependencies:** Node 18.3+ standard library only.
 
 ---
 
-## Installation
-
-Install Briefed globally to use it across any repository, or add it to your project's development dependencies:
+## Quick start
 
 ```bash
-# Global installation
-npm install -g briefed-cli
-
-# Local project installation
-npm install --save-dev briefed-cli
+npm install -g briefed-cli   # or use npx briefed-cli <command>
+cd your-repo
+briefed init                 # installs hooks, links .briefed/context.md from your agent files
+git add CLAUDE.md && git commit -m "Link Briefed context"
 ```
+
+That's it. Pull, merge or switch branches as usual. Other commands:
+
+| Command | What it does |
+| :--- | :--- |
+| `briefed run` | Summarize changes since `ORIG_HEAD` now (`--verbose` to see details, `--since <ref>` to pick a base) |
+| `briefed status` | Show the latest entry |
+| `briefed config` | Print the resolved configuration (API key redacted) |
+| `briefed init -i` | Interactive setup for backend, target and API key |
+| `briefed uninstall` | Remove the hooks |
+
+Hook output from the last run goes to `.git/briefed.log`.
+
+### Team setup
+
+Git hooks aren't committed, so each teammate runs `npx briefed-cli init` once per clone. To make it automatic for an npm project, add it to `prepare`:
+
+```json
+{ "scripts": { "prepare": "briefed init" }, "devDependencies": { "briefed-cli": "^0.9.0-beta.9" } }
+```
+
+If the repo uses Husky, `init` writes into `.husky/` instead of `.git/hooks/`, so the hooks are shared through the repo.
 
 ---
 
-## Quick Start
+## How it works
 
-### 1. Initialize Hooks and Target Files
-Set up Git hooks and resolve your repository's target context file:
-```bash
-briefed init
-```
-*This targets `.husky/` if present; otherwise, it configures standard `.git/hooks/post-merge` and `.git/hooks/post-rewrite` hooks.*
+1. **Hook fires** in the background and runs `briefed run` (or `briefed run --since <previous HEAD>` on branch switches).
+2. **Diff:** `git diff <base> HEAD`, where base is `ORIG_HEAD` after a pull, merge or rebase, and the merge-base with the previous branch after a checkout. `ignored` patterns are passed to git as exclude pathspecs, so lockfiles and build output never reach the summarizer.
+3. **Budget:** diffs over 8,000 characters are cut down so every file gets an equal share, with `git diff --stat` on top.
+4. **Summarize:** commit subjects, the file list and the diff go to the configured backend. Tiny changes (≤ 2 files and ≤ `minDiffLines` lines) skip the LLM.
+5. **Write:** the entry is prepended between `<!-- BRIEFED_START -->` / `<!-- BRIEFED_END -->` in the target, with duplicates (same commit) skipped and old entries pruned by `window`.
 
-### 2. Print Current Configuration
-Inspect the active configurations (a deep merge of default options, local environment variables, and `.briefed.json` settings):
-```bash
-briefed config
-```
+An entry looks like this:
 
-### 3. Review the Latest Summary Entry
-Read and verify the most recently written context block inside your active target file:
-```bash
-briefed status
+```markdown
+## [2026-10-20T13:23:38Z] 278ccf0 (feature/auth)
+- Auth moved from src/auth to src/security; import from there
+- New `npm run db:migrate` script; run it after pulling
+- BRIEFED_MODE env var is now required in .env
+
+FILES: src/security/login.ts, package.json, .env.example
 ```
 
-### 4. Manually Run a Context Sync
-Trigger a manual diff check against `ORIG_HEAD` and update the active context file:
-```bash
-briefed run
-```
-
----
-
-## How It Works
-
-Briefed coordinates hook triggers, smart file detection, precise git diffing, and strict token trimming to write standard, parsable Markdown blocks within `<!-- BRIEFED_START -->` and `<!-- BRIEFED_END -->` markers.
-
-### 1. Hook Orchestration
-When running `briefed init`:
-- The CLI checks for `.husky/` directories. If found, it appends to `.husky/post-merge` and `.husky/post-rewrite`.
-- If Husky is absent, it writes to `.git/hooks/post-merge` and `.git/hooks/post-rewrite`.
-- If an existing hook file exists, Briefed injects its command cleanly within block boundaries (`# BRIEFED_HOOK_APPENDED_START` and `# BRIEFED_HOOK_APPENDED_END`), ensuring other workflows are unaffected.
-
-### 2. Target File Auto-Detection
-If `target` is configured to `"auto"`, Briefed scans the root directory for:
-1. `CLAUDE.md`
-2. `AGENTS.md`
-3. `.github/copilot-instructions.md`
-
-If none of these exist, a fresh `CLAUDE.md` is generated automatically with a standard markdown header.
-
-### 3. Diff and Segment Grouping
-Briefed executes `git diff ORIG_HEAD HEAD --numstat` to identify modified files. Files matching glob patterns specified under the `"ignored"` configuration are discarded.
-To optimize semantic analysis:
-- Files are grouped by their top-level directory segments (e.g. `src/`, `tests/`).
-- The CLI parses git reflogs and commit history to extract the source branch name (e.g., resolving active branch merges/rebases).
-
-### 4. Smart Diff Truncation
-To safeguard context limits, if the diff exceeds 8,000 characters, Briefed computes a high-level `git diff ORIG_HEAD HEAD --stat`, captures it, and truncates the detailed raw diff after 200 lines. It appends a truncated line count suffix (e.g., `[... truncated, 342 lines omitted]`).
-
-### 5. Word-Count Enforcement
-LLM engines are instructed to return a structured block output using specific categories: `FILES`, `ADDED`, `REMOVED`, `RENAMED`, and `DEPS`. Briefed enforces a configurable word cap on the returned string. If the response exceeds the limit, it prunes trailing content at the last complete line boundary, maintaining document formatting.
-
-### 6. Smart Skip Optimization
-If a change is extremely minor (i.e. number of changed files ≤ 2 AND total additions + deletions ≤ `minDiffLines` [default: 10]), Briefed automatically bypasses the LLM engine to run the mechanical generator instantly.
-
-### 7. Structured Core Prompts
-Briefed utilizes a highly-focused prompt structure (including dedicated system prompt configurations) to ensure clean categorical summaries. You can review the exact templates and engineering choices in [PROMPT.md](PROMPT.md).
+Without an LLM, the bullets are the commit subjects, followed by a `STATS:` line.
 
 ---
 
 ## Configuration
 
-You can customize Briefed behavior globally by placing a `~/.briefed.json` file in your home directory, or locally via a `.briefed.json` file in your project root. Briefed deep-merges configurations in the following precedence order:
-1. **Local Project Config (`.briefed.json`)** — Project-specific overrides.
-2. **Global User Config (`~/.briefed.json`)** — Global developer defaults (e.g., API keys).
-3. **Built-in System Defaults** — Fallback options.
+Put settings in `~/.briefed.json` (applies to all repos) or `.briefed.json` (per repo; gitignore it if it holds a key). Local overrides global, which overrides the defaults.
 
-| Option | Type | Default Value | Environment Fallback | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `target` | `string` | `"auto"` | None | The path to your target AI context file. Set to `"auto"` to run auto-detection or provide a custom relative/absolute path. |
-| `backend` | `"ollama" \| "anthropic" \| "gemini" \| "none"` | `"ollama"` | None | The summarization service to use. Select `"none"` to completely skip LLM usage and use local mechanical templates. |
-| `model` | `string` | `"llama3"` | None | The specific model identifier passed to the LLM backend (e.g. `"llama3"`, `"claude-3-5-sonnet-20241022"`, `"gemini-2.5-flash"`). Defaults to `"gemini-2.5-flash"` when `gemini` is selected. |
-| `apiKey` | `string` | `undefined` | `GEMINI_API_KEY`, `BRIEFED_API_KEY`, `ANTHROPIC_API_KEY` | Secret credential API key required for Anthropic and Gemini backends. Resolves first-found in priority. |
-| `apiUrl` | `string` | `"http://localhost:11434"` | None | Connection endpoint API URL used specifically for local `"ollama"` requests. |
-| `window.days` | `number` | `7` | None | The maximum age of entries (in days) to retain inside the context file. Older entries are pruned. |
-| `window.entries` | `number` | `10` | None | The maximum number of entries to keep. Oldest entries are deleted when this limit is exceeded. |
-| `window.maxTotalWords` | `number` | `1000` | None | The maximum cumulative words allowed across all combined entries to strictly bound context file footprint. Older entries are pruned dynamically. |
-| `ignored` | `string[]` | `["*.lock", "package-lock.json", "pnpm-lock.yaml", "dist/", "*.map", "*.min.js", "*.min.css"]` | None | Glob patterns used to filter files out of git diff parsing. |
-| `minDiffLines` | `number` | `10` | None | The minimum number of lines changed (insertions + deletions) to qualify for an LLM summarization call. |
-| `maxSummaryWords` | `number` | `250` | None | The maximum word count enforced on LLM summary outputs. |
-
-### Configuration Example (`.briefed.json` or `~/.briefed.json`)
-
-```json
-{
-  "backend": "gemini",
-  "model": "gemini-2.5-flash",
-  "window": {
-    "days": 14,
-    "entries": 15
-  },
-  "ignored": [
-    "*.lock",
-    "dist/",
-    "node_modules/",
-    "coverage/"
-  ],
-  "minDiffLines": 15
-}
-```
+| Option | Default | Description |
+| :--- | :--- | :--- |
+| `target` | `"auto"` | `"auto"` = `.briefed/context.md` (gitignored, linked from agent files). Set e.g. `"CLAUDE.md"` to write entries straight into a committed file, as the CI workflow does. |
+| `backend` | auto | `"gemini"`, `"anthropic"`, `"ollama"` or `"none"`. If unset: `gemini` when `GEMINI_API_KEY` is set, `anthropic` when `ANTHROPIC_API_KEY`/`BRIEFED_API_KEY` is set, otherwise `none` (commit messages). |
+| `model` | per backend | `gemini-2.5-flash`, `claude-haiku-5-5`, `llama3`. |
+| `apiKey` | env | Env vars win: Gemini reads `GEMINI_API_KEY` → `BRIEFED_API_KEY`; Anthropic reads `BRIEFED_API_KEY` → `ANTHROPIC_API_KEY`. Prefer env vars over storing keys in files. |
+| `apiUrl` | `http://localhost:11434` | Ollama endpoint. |
+| `window.entries` | `10` | Maximum entries kept. |
+| `window.maxTotalWords` | `1000` | Word budget across all entries; oldest are pruned first. |
+| `window.days` | `0` (off) | Optional maximum entry age in days. |
+| `ignored` | lockfiles, `dist/`, `*.map`, `*.min.*` | `.gitignore`-style patterns. `*.lock` and `dist/` match at any depth; patterns containing `/` are anchored at the repo root. |
+| `minDiffLines` | `10` | Changes this small (in ≤ 2 files) skip the LLM. |
+| `maxSummaryWords` | `250` | Word cap per LLM summary. |
 
 ---
 
-## Supported Backends
+## CI/CD (optional)
 
-### 1. Google Gemini (Recommended)
-Fast, highly accurate, and extremely token-efficient.
-1. Obtain an API key from Google AI Studio.
-2. Configure `"backend": "gemini"` and set your model to `"gemini-2.5-flash"` (or `gemini-2.5-pro`).
-3. Export your key to the environment:
-   ```bash
-   export GEMINI_API_KEY="your-google-api-key"
-   ```
-
-### 2. Ollama (Local Model)
-Ideal for zero-cost, local-first workflows.
-1. Download and run [Ollama](https://ollama.com/).
-2. Pull your chosen local model:
-   ```bash
-   ollama pull llama3
-   ```
-3. Set your backend to `"ollama"`. Briefed connects locally via `http://localhost:11434/api/generate` with a 15-second fail-safe timeout.
-
-### 3. Anthropic Claude
-Best for advanced semantic understanding and precise structured summaries.
-1. Obtain an API key from the Anthropic Console.
-2. Configure `"backend": "anthropic"` and set your model to `"claude-3-5-sonnet-20241022"`.
-3. Export your key:
-   ```bash
-   export ANTHROPIC_API_KEY="your-anthropic-key"
-   ```
-
----
-
-## Local-First vs. CI/CD Workflows
-
-Briefed is designed primarily as a **local-first** developer tool, but it also supports optional **CI/CD automation** to fit any team setup:
-
-### Option A: Local-First Workflow (Default & Recommended)
-By default, all AI context file updates happen completely offline and private to your development machine:
-* **Disk-Only Updates:** When you run `git pull`, `git merge`, or `git rebase` locally, Briefed's Git hooks automatically run `briefed run` and update `CLAUDE.md` on your disk.
-* **No Automated Commits:** Briefed **never** stages or commits these changes automatically locally. This ensures your local Git history remains 100% clean and under your control.
-* **Instant Agent Context:** Your local IDE agent (Cursor, Claude Code, or Antigravity) immediately sees the beautiful, rich summaries in `CLAUDE.md` as you code.
-* **Privacy:** All API keys remain securely inside your local processes or your gitignored `.briefed.json` file.
-
-### Option B: CI/CD Automation Workflow (Optional)
-If you are working in a team and want to guarantee that your remote GitHub repository's default branch (e.g. `main`) always has an updated `CLAUDE.md` even when pull requests are merged directly through the GitHub web UI, you can deploy Briefed as a GitHub Action.
-
-When deployed as an Action, the cloud runner executes `briefed run` upon pushes to `main`, auto-detects changes, and commits the updated context file back to your repository under the name `github-actions[bot]`.
-
----
-
-## GitHub Action Setup
-
-To set up automated remote updates on GitHub:
-
-1. Create a file named `.github/workflows/briefed.yml` in your repository:
+Local hooks cover developers who pull. If your team merges in the GitHub UI and wants a committed, central context file, run Briefed in a workflow that writes straight into `CLAUDE.md`:
 
 ```yaml
 name: Briefed Context Update
-
 on:
   push:
-    branches:
-      - main  # Adjust this to match your default branch
-
+    branches: [main]
 permissions:
   contents: write
-
 jobs:
   briefed-context:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
-          fetch-depth: 2  # Fetches previous history to compare HEAD~1 with HEAD
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+          fetch-depth: 2
+      - uses: actions/setup-node@v6
         with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Check API Keys availability
-        id: check-keys
-        shell: bash
-        run: |
-          if [ -n "$GEMINI_API" ] || [ -n "$BRIEFED_API" ] || [ -n "$ANTHROPIC_API" ]; then
-            echo "has_keys=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_keys=false" >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          GEMINI_API: ${{ secrets.GEMINI_API_KEY }}
-          BRIEFED_API: ${{ secrets.BRIEFED_API_KEY }}
-          ANTHROPIC_API: ${{ secrets.ANTHROPIC_API_KEY }}
-
-      - name: Install Briefed
-        if: steps.check-keys.outputs.has_keys == 'true'
-        run: npm install -g briefed-cli
-
-      - name: Set ORIG_HEAD manually
-        if: steps.check-keys.outputs.has_keys == 'true'
-        run: git update-ref ORIG_HEAD $(git rev-parse HEAD~1)
-
+          node-version: 20
       - name: Run briefed
-        if: steps.check-keys.outputs.has_keys == 'true'
-        run: briefed run
-        env:
-          BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
-      - name: Check and commit context changes
-        if: steps.check-keys.outputs.has_keys == 'true'
         run: |
-          CHANGED=$(git diff --name-only | grep -E '^(CLAUDE\.md|AGENTS\.md|\.github/copilot-instructions\.md)$' | head -1)
-          if [ -n "$CHANGED" ]; then
-            git config --local user.name "github-actions[bot]"
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git add "$CHANGED"
-            git commit -m "Update AI context [skip ci]"
-            git push
+          git update-ref ORIG_HEAD "$(git rev-parse HEAD~1)"
+          npx --yes briefed-cli run --target CLAUDE.md
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  # optional; without it, commit messages are used
+      - name: Commit context
+        run: |
+          if ! git diff --quiet -- CLAUDE.md; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -am "Update AI context [skip ci]" && git push
           fi
 ```
 
-### 🔑 Configuring Repository Secrets for CI/CD
-Since gitignored files like `.briefed.json` are private and **never committed to your repository**, the GitHub Actions cloud runner cannot read your local API key.
-
-For the runner to successfully invoke Gemini or Claude instead of falling back to a mechanical summary, you must configure your API key as a secure **GitHub Secret**:
-1. On GitHub, navigate to your repository's homepage.
-2. Click **Settings** ➡️ **Secrets and variables** ➡️ **Actions** in the sidebar.
-3. Click **New repository secret**.
-4. Name the secret **`GEMINI_API_KEY`** (or `ANTHROPIC_API_KEY`/`BRIEFED_API_KEY`) and paste your API key as the value.
-5. Click **Add secret**.
+To add the optional key: **Settings → Secrets and variables → Actions → New repository secret**, named `GEMINI_API_KEY` (or `ANTHROPIC_API_KEY`).
 
 ---
 
-## Troubleshooting & Mechanical Fallback
+## Troubleshooting
 
-### Graceful Engine Degradation
-Briefed incorporates a robust mechanical fallback layer when:
-- The local Ollama daemon is offline or returns connection errors.
-- Gemini or Anthropic API keys are not specified or credentials fail.
-- Summarization queries hit timeouts (15-second cap).
+- **Nothing updates after a pull:** check `.git/briefed.log`, then run `briefed run --verbose`.
+- **`LLM summarization failed ... Falling back to commit-log summary`:** the backend was unreachable or the key is missing. The entry is still written, built from commit messages.
+- **Upgrading from ≤ 0.9.0-beta.9:** entries used to be written into `CLAUDE.md`. Re-run `briefed init` to switch to `.briefed/context.md` (then delete the old marker block), or set `"target": "CLAUDE.md"` to keep the old behavior.
 
-When a failure occurs, the console writes a warning and invokes the mechanical fallback:
-```text
-Warning: LLM summarization failed (Ollama API error: 503 Service Unavailable). Falling back to none backend.
-```
-
-### The Mechanical Format
-The local fallback formats changes into structural aggregates instantly without network roundtrips:
-```markdown
-FILES: src/ (cli.ts, summarize.ts) | config/ (types.ts)
-DEPS: 15 insertions, 2 deletions
-```
-
-### Non-Blocking Git Hooks
-To guarantee git operations (like pulls or merges) are never blocked by Briefed execution issues, all runtime failures inside hooks are caught, printed as console warnings, and the program exits with code `0`.
-
----
-
-## 🤖 System Prompt for Agentic IDEs (Cursor, Windsurf, Claude Dev, Antigravity)
-
-### 💡 Why This Prompt is Vital
-By default, when your AI assistant (like Claude Code in the terminal, Cursor in the editor, or Copilot in your environment) boots up, it has no native awareness that Briefed is running git hooks and maintaining a live chronological history in your workspace context files. 
-
-Feeding this **System Instruction Directive** into your agent's custom rules (such as `.cursorrules`, Claude's custom instructions, or global IDE rules):
-1. **Bridges the Context Latency Gap**: Forces the agent to automatically read the Briefed block so its memory matches your exact local branch state.
-2. **Prevents Redundant Tool Calls**: Instructs the agent not to run expensive, slow commands (like running manual `git logs` or `git diffs`), saving substantial token fees and API response time.
-3. **Unlocks Cross-Agent Alignment**: Ensures that if you switch from Claude Code to Cursor, or if multiple developers on your team use different tools, all of your AI agents stay 100% aligned on the exact same codebase history seamlessly.
-
-Copy and paste the exact markdown block below into your global custom instructions, `.cursorrules`, `CLAUDE.md`, or IDE custom rules:
-
-```markdown
-# Git Context Alignment (Briefed CLI)
-This project utilizes the Briefed CLI tool, which automatically updates the active AI context file (e.g. CLAUDE.md) after every `git pull`, merge, or rebase.
-
-## Instructions for the AI Agent:
-1. Always parse the dated Git context blocks written inside the `<!-- BRIEFED_START -->` and `<!-- BRIEFED_END -->` markers in your context file to keep your short-term memory aligned with the latest workspace state.
-2. Do not attempt to run manual git diffs or git logs to understand recent pull histories; instead, inspect the structured logs inside the context markers.
-3. The context log is bounded dynamically under a strict `maxTotalWords` ceiling (~1000 words) to protect your context window. Parse only the active entries between the start and end markers.
-4. Entries have been sanitized client-side of any internal reasoning (`<think>`) blocks and lockfile bloat, leaving only high-signal category blocks (`FILES`, `ADDED`, `REMOVED`, `RENAMED`, `DEPS`).
-5. Use this structural information to instantly grasp which endpoints, APIs, or components were recently introduced or deprecated, ensuring all code suggestions align 100% with the latest codebase updates.
-```
+See [PROMPT.md](PROMPT.md) for prompt design notes and [CONTRIBUTING.md](CONTRIBUTING.md) to get involved.

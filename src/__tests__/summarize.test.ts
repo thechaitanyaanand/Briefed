@@ -63,7 +63,7 @@ describe('summarize.ts', () => {
 
       expect(output.skippedLLM).toBe(true);
       expect(output.backendUsed).toBe('none');
-      expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 5 insertions, 4 deletions');
+      expect(output.entry.summary).toBe('STATS: 1 files, +5 -4');
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -130,6 +130,7 @@ describe('summarize.ts', () => {
         ...emptyDiff,
         files: ['src/git.ts', 'src/types.ts', 'package.json'],
         filesByDir: { src: ['src/git.ts', 'src/types.ts'], '.': ['package.json'] },
+        commits: ['Add types', 'Bump deps'],
         additions: 50,
         deletions: 30,
         isEmpty: false
@@ -147,7 +148,7 @@ describe('summarize.ts', () => {
 
       expect(output.skippedLLM).toBe(false);
       expect(output.backendUsed).toBe('none');
-      expect(output.entry.summary).toBe('FILES: src/ (git.ts, types.ts) | ./ (package.json)\nDEPS: 50 insertions, 30 deletions');
+      expect(output.entry.summary).toBe('- Add types\n- Bump deps\nSTATS: 3 files, +50 -30');
       expect(mockFetch).not.toHaveBeenCalled();
     });
   });
@@ -191,8 +192,7 @@ describe('summarize.ts', () => {
       expect(options.headers).toEqual({ 'Content-Type': 'application/json' });
       const body = JSON.parse(options.body);
       expect(body.model).toBe('custom-llama');
-      expect(body.system).toContain('You are a precise developer assistant.');
-      expect(body.prompt).toContain('Git Diff:');
+      expect(body.prompt).toContain('Git diff:');
       expect(body.stream).toBe(false);
       expect(body.options).toEqual({ num_predict: 1000 });
     });
@@ -246,7 +246,7 @@ describe('summarize.ts', () => {
       expect(body.model).toBe('claude-3-opus');
       expect(body.max_tokens).toBe(1000);
       expect(body.messages[0].role).toBe('user');
-      expect(body.messages[0].content).toContain('Summarize the following git diff.');
+      expect(body.messages[0].content).toContain('"recent changes" note');
     });
   });
 
@@ -298,8 +298,8 @@ describe('summarize.ts', () => {
         'x-goog-api-key': 'gemini-test-key'
       });
       const body = JSON.parse(options.body);
-      expect(body.contents[0].parts[0].text).toContain('Summarize the following git diff.');
-      expect(body.generationConfig).toEqual({ maxOutputTokens: 2000 });
+      expect(body.contents[0].parts[0].text).toContain('"recent changes" note');
+      expect(body.generationConfig).toEqual({ maxOutputTokens: 1000, thinkingConfig: { thinkingBudget: 0 } });
     });
   });
 
@@ -324,7 +324,7 @@ describe('summarize.ts', () => {
       const output = await summarize(input);
 
       expect(output.backendUsed).toBe('none');
-      expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 15 insertions, 0 deletions');
+      expect(output.entry.summary).toBe('STATS: 1 files, +15 -0');
       expect(mockConsoleWarn).toHaveBeenCalled();
     });
 
@@ -357,7 +357,7 @@ describe('summarize.ts', () => {
         const output = await summarize(input);
 
         expect(output.backendUsed).toBe('none');
-        expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 15 insertions, 0 deletions');
+        expect(output.entry.summary).toBe('STATS: 1 files, +15 -0');
         expect(mockConsoleWarn).toHaveBeenCalled();
       } finally {
         process.env.ANTHROPIC_API_KEY = originalApiKey;
@@ -390,7 +390,7 @@ describe('summarize.ts', () => {
       const output = await summarize(input);
 
       expect(output.backendUsed).toBe('none');
-      expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 15 insertions, 0 deletions');
+      expect(output.entry.summary).toBe('STATS: 1 files, +15 -0');
       expect(mockConsoleWarn).toHaveBeenCalled();
     });
 
@@ -426,7 +426,7 @@ describe('summarize.ts', () => {
         const output = await summarize(input);
 
         expect(output.backendUsed).toBe('none');
-        expect(output.entry.summary).toBe('FILES: src/ (git.ts)\nDEPS: 15 insertions, 0 deletions');
+        expect(output.entry.summary).toBe('STATS: 1 files, +15 -0');
         expect(mockConsoleWarn).toHaveBeenCalled();
       } finally {
         process.env.GEMINI_API_KEY = originalGeminiKey;
@@ -577,6 +577,37 @@ describe('summarize.ts', () => {
 
       const output = await summarize({ diff, config: defaultConfig });
       expect(output.entry.summary).toBe('FILES: src/git.ts\nADDED: added explanation for <think> stripping');
+    });
+  });
+
+  describe('Security', () => {
+    const secretDiff: DiffResult = {
+      ...emptyDiff,
+      files: ['a.ts', 'b.ts', 'c.ts'],
+      additions: 30,
+      rawDiff: '+const api_key = "abcdefghijklmnopqrstuvwxyz123456";',
+      isEmpty: false
+    };
+
+    it('should scrub secrets from the Ollama prompt too', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ response: '- ok' }) });
+      await summarize({ diff: secretDiff, config: defaultConfig });
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.prompt).toContain('[REDACTED]');
+      expect(body.prompt).not.toContain('abcdefghijklmnopqrstuvwxyz123456');
+    });
+
+    it('should never send ANTHROPIC_API_KEY to Gemini', async () => {
+      vi.stubEnv('GEMINI_API_KEY', '');
+      vi.stubEnv('BRIEFED_API_KEY', '');
+      vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-secret');
+      try {
+        const output = await summarize({ diff: secretDiff, config: { ...defaultConfig, backend: 'gemini', model: 'gemini-2.5-flash' } });
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(output.backendUsed).toBe('none');
+      } finally {
+        vi.unstubAllEnvs();
+      }
     });
   });
 });

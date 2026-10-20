@@ -1,11 +1,9 @@
 #!/bin/sh
 # BRIEFED_HOOK
 cd "$(git rev-parse --show-toplevel)" || exit 0
-if command -v briefed >/dev/null 2>&1; then
-  briefed run
-elif [ -x "./node_modules/.bin/briefed" ]; then
-  ./node_modules/.bin/briefed run
-else
-  npx --yes --package=briefed-cli briefed run 2>/dev/null
-fi
+if command -v briefed >/dev/null 2>&1; then b=briefed
+elif [ -x ./node_modules/.bin/briefed ]; then b=./node_modules/.bin/briefed
+else b="npx --yes --package=briefed-cli briefed"; fi
+# Background so git returns immediately; last run's output lands in .git/briefed.log
+($b run >"$(git rev-parse --git-path briefed.log)" 2>&1 &)
 exit 0

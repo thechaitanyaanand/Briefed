@@ -118,6 +118,11 @@ export interface DiffResult {
   sourceBranch?: string;
 
   /**
+   * Subjects of the non-merge commits in the diffed range, newest first.
+   */
+  commits?: string[];
+
+  /**
    * Set to true if there are no meaningful or non-ignored changes to summarize.
    */
   isEmpty: boolean;

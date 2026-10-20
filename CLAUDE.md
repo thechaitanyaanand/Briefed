@@ -13,7 +13,7 @@
 - **Zero Dependencies**: Minimize external dependencies to keep the CLI footprint lightweight.
 - **Safety & Error Handling**: Never throw unhandled exceptions from git hooks. Catch file errors, fall back to structural diffs, and exit `0` to avoid blocking Git operations.
 - **Tests**: Place all unit test files under `src/__tests__/`. 
-- **Hook Formatting**: Ensure hook templates (`scripts/post-merge` and `scripts/post-rewrite`) are formatted with LF line endings to avoid runtime interpreter issues on Windows.
+- **Hook Formatting**: Ensure hook templates (`scripts/post-merge`, `scripts/post-rewrite`, `scripts/post-checkout`) are formatted with LF line endings (enforced in `.gitattributes`); they are the single source `src/hook.ts` reads at install time to avoid runtime interpreter issues on Windows.
 - **Dynamic Blocks**: Do not manually modify the content between the BRIEFED start and end markers.
 
 <!-- BRIEFED_START -->

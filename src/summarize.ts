@@ -1,22 +1,28 @@
-import * as path from 'path';
-import chalk from 'chalk';
 import { SummarizeInput, SummarizeOutput, DiffResult } from './types.js';
 
+const MAX_FILES_LISTED = 20;
+const MAX_COMMITS_LISTED = 10;
+
 /**
- * Formats a mechanical summary when LLM is skipped or fails.
+ * Formats a summary without an LLM: commit subjects (the author's own words) plus line stats.
+ * Changed files are appended by the writer from `filesChanged`.
  */
 function formatMechanicalSummary(diff: DiffResult): string {
-  const fileGroups: string[] = [];
-  for (const [dir, files] of Object.entries(diff.filesByDir)) {
-    const dirLabel = dir === '.' ? './' : (dir.endsWith('/') ? dir : `${dir}/`);
-    const basenames = files.map(f => path.basename(f));
-    fileGroups.push(`${dirLabel} (${basenames.join(', ')})`);
-  }
-
+  const commits = (diff.commits ?? []).slice(0, MAX_COMMITS_LISTED).map(subject => `- ${subject}`);
   return [
-    `FILES: ${fileGroups.join(' | ')}`,
-    `DEPS: ${diff.additions} insertions, ${diff.deletions} deletions`
+    ...commits,
+    `STATS: ${diff.files.length} files, +${diff.additions} -${diff.deletions}`
   ].join('\n');
+}
+
+/**
+ * Caps the file list so a sweeping refactor doesn't flood the context file.
+ */
+function listFiles(files: string[]): string[] {
+  if (files.length <= MAX_FILES_LISTED) {
+    return files;
+  }
+  return [...files.slice(0, MAX_FILES_LISTED), `+${files.length - MAX_FILES_LISTED} more`];
 }
 
 /**
@@ -52,7 +58,7 @@ function enforceWordLimit(text: string, maxWords: number = 150): string {
 }
 
 /**
- * SEC-04: Scrubs common secret patterns from diff text before sending to cloud APIs.
+ * SEC-04: Scrubs common secret patterns from diff text before sending it to any LLM endpoint.
  * Detects API keys, tokens, passwords, AWS credentials, private keys, and connection strings.
  */
 function scrubSecrets(text: string): string {
@@ -83,36 +89,39 @@ function scrubSecrets(text: string): string {
 }
 
 /**
- * Constructs the prompt template for LLM summarization.
- * If scrub is true, applies secret scrubbing to the diff before including it.
+ * Builds the single prompt shared by every backend. The diff is always scrubbed:
+ * an Ollama apiUrl can point at a remote host just as easily as a cloud API.
  */
-function constructPrompt(diff: DiffResult, scrub: boolean = false): string {
-  const rawDiff = scrub ? scrubSecrets(diff.rawDiff) : diff.rawDiff;
-  return `Summarize the following git diff.
-You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
-Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
+function constructPrompt(diff: DiffResult): string {
+  const commits = (diff.commits ?? []).map(subject => `- ${subject}`).join('\n') || '(none)';
+  return `You write the "recent changes" note that an AI coding agent reads before working in this repository.
+From the commits and diff below, list only facts that change how the agent should work: new, renamed or removed commands, scripts, modules, public APIs, config keys, environment variables, dependencies, conventions, and breaking behavior changes.
+Output 1 to 5 lines, each starting with "- ". No headings, no file lists, no line counts, no markdown fences, no filler.
+If nothing matters to an agent, output exactly: - Minor changes only.
 
-Format:
-FILES: <comma-separated list of directories/files changed>
-ADDED: <key features, modules or code additions, separated by |>
-REMOVED: <key removals or deprecations, separated by |>
-RENAMED: <files renamed, e.g. path/to/old -> path/to/new, separated by |>
-DEPS: <dependency changes or change counts, e.g., "X additions, Y deletions">
+Commits:
+${commits}
 
-Git Diff:
-${rawDiff}
-
-List of changed files:
+Changed files:
 ${diff.files.join('\n')}
 
-Change Statistics:
-Additions: ${diff.additions}
-Deletions: ${diff.deletions}
+Git diff:
+${scrubSecrets(diff.rawDiff)}
 `;
 }
 
+function buildEntry(diff: DiffResult, summary: string): SummarizeOutput['entry'] {
+  return {
+    date: new Date().toISOString(),
+    commitHash: diff.commitHash,
+    sourceBranch: diff.sourceBranch,
+    summary,
+    filesChanged: listFiles(diff.files)
+  };
+}
+
 /**
- * Summarizes the changed git diff using Ollama, Anthropic, or none backend.
+ * Summarizes the changed git diff using Ollama, Anthropic, Gemini, or the no-LLM backend.
  */
 export async function summarize(input: SummarizeInput): Promise<SummarizeOutput> {
   const { diff, config } = input;
@@ -122,34 +131,12 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
   const isSmartSkip = diff.files.length <= 2 && (diff.additions + diff.deletions) <= minLines;
 
   if (isSmartSkip) {
-    const summary = formatMechanicalSummary(diff);
-    return {
-      entry: {
-        date: new Date().toISOString(),
-        commitHash: diff.commitHash,
-        sourceBranch: diff.sourceBranch,
-        summary,
-        filesChanged: diff.files
-      },
-      backendUsed: 'none',
-      skippedLLM: true
-    };
+    return { entry: buildEntry(diff, formatMechanicalSummary(diff)), backendUsed: 'none', skippedLLM: true };
   }
 
   // 2. If configured backend is 'none'
   if (config.backend === 'none') {
-    const summary = formatMechanicalSummary(diff);
-    return {
-      entry: {
-        date: new Date().toISOString(),
-        commitHash: diff.commitHash,
-        sourceBranch: diff.sourceBranch,
-        summary,
-        filesChanged: diff.files
-      },
-      backendUsed: 'none',
-      skippedLLM: false
-    };
+    return { entry: buildEntry(diff, formatMechanicalSummary(diff)), backendUsed: 'none', skippedLLM: false };
   }
 
   // 3. Otherwise try LLM Backends
@@ -157,32 +144,10 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
   let backendUsed: 'ollama' | 'anthropic' | 'gemini' | 'none' = config.backend;
 
   try {
-    const prompt = constructPrompt(diff, true);
+    const prompt = constructPrompt(diff);
 
     if (config.backend === 'ollama') {
       const apiUrl = config.apiUrl || 'http://localhost:11434';
-      
-      const system = `You are a precise developer assistant. Summarize the git diff.
-You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
-Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
-
-Format:
-FILES: <comma-separated list of directories/files changed>
-ADDED: <key features, modules or code additions, separated by |>
-REMOVED: <key removals or deprecations, separated by |>
-RENAMED: <files renamed, e.g. path/to/old -> path/to/new, separated by |>
-DEPS: <dependency changes or change counts, e.g., "X additions, Y deletions">`;
-
-      const userPrompt = `Git Diff:
-${diff.rawDiff}
-
-List of changed files:
-${diff.files.join('\n')}
-
-Change Statistics:
-Additions: ${diff.additions}
-Deletions: ${diff.deletions}`;
-
       const response = await fetch(`${apiUrl}/api/generate`, {
         method: 'POST',
         headers: {
@@ -190,8 +155,7 @@ Deletions: ${diff.deletions}`;
         },
         body: JSON.stringify({
           model: config.model,
-          prompt: userPrompt,
-          system,
+          prompt,
           stream: false,
           options: { num_predict: 1000 }
         }),
@@ -225,7 +189,7 @@ Deletions: ${diff.deletions}`;
           max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
         }),
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
@@ -239,9 +203,17 @@ Deletions: ${diff.deletions}`;
       }
       summary = text.trim();
     } else if (config.backend === 'gemini') {
-      const apiKey = config.apiKey || process.env.GEMINI_API_KEY || process.env.BRIEFED_API_KEY || process.env.ANTHROPIC_API_KEY;
+      // Never fall back to ANTHROPIC_API_KEY here: that would send an Anthropic key to Google.
+      const apiKey = config.apiKey || process.env.GEMINI_API_KEY || process.env.BRIEFED_API_KEY;
       if (!apiKey) {
         throw new Error('Gemini API key is not configured');
+      }
+
+      const generationConfig: Record<string, unknown> = { maxOutputTokens: 1000 };
+      // Flash models think by default; summarizing doesn't need it and thinking adds latency and cost.
+      // Pro models reject a zero budget, so only flash gets it.
+      if (config.model.includes('flash')) {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
       }
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent`, {
@@ -251,16 +223,10 @@ Deletions: ${diff.deletions}`;
           'x-goog-api-key': apiKey
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            maxOutputTokens: 2000
-          }
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig
         }),
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
@@ -291,24 +257,10 @@ Deletions: ${diff.deletions}`;
     summary = summary.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;');
 
   } catch (error: any) {
-    console.warn(
-      chalk.yellow(
-        `Warning: LLM summarization failed (${error?.message || error}). Falling back to none backend.`
-      )
-    );
+    console.warn(`Warning: LLM summarization failed (${error?.message || error}). Falling back to commit-log summary.`);
     summary = formatMechanicalSummary(diff);
     backendUsed = 'none';
   }
 
-  return {
-    entry: {
-      date: new Date().toISOString(),
-      commitHash: diff.commitHash,
-      sourceBranch: diff.sourceBranch,
-      summary,
-      filesChanged: diff.files
-    },
-    backendUsed,
-    skippedLLM: false
-  };
+  return { entry: buildEntry(diff, summary), backendUsed, skippedLLM: false };
 }

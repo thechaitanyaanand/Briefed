@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { DEFAULT_CONFIG, resolveTargetFile, getConfig } from '../config.js';
+import { DEFAULT_CONFIG, resolveTargetFile, linkContextFile, getConfig } from '../config.js';
 
 vi.mock('os', async (importOriginal) => {
   const original = await importOriginal<typeof import('os')>();
@@ -39,57 +39,53 @@ describe('config.ts', () => {
   describe('DEFAULT_CONFIG', () => {
     it('should have standard default values', () => {
       expect(DEFAULT_CONFIG.target).toBe('auto');
-      expect(DEFAULT_CONFIG.backend).toBe('gemini');
-      expect(DEFAULT_CONFIG.model).toBe('gemini-2.5-flash');
+      expect(DEFAULT_CONFIG.backend).toBe('none');
+      expect(DEFAULT_CONFIG.model).toBe('none');
       expect(DEFAULT_CONFIG.apiUrl).toBeUndefined();
-      expect(DEFAULT_CONFIG.window).toEqual({ days: 7, entries: 10, maxTotalWords: 1000 });
+      expect(DEFAULT_CONFIG.window).toEqual({ days: 0, entries: 10, maxTotalWords: 1000 });
       expect(DEFAULT_CONFIG.ignored).toContain('dist/');
       expect(DEFAULT_CONFIG.minDiffLines).toBe(10);
     });
   });
 
   describe('resolveTargetFile', () => {
-    it('should pick CLAUDE.md if it exists', () => {
-      const claudePath = path.join(TEST_DIR, 'CLAUDE.md');
-      fs.writeFileSync(claudePath, 'CLAUDE content');
-
+    it('should return .briefed/context.md and gitignore the .briefed directory', () => {
       const resolved = resolveTargetFile(TEST_DIR);
-      expect(resolved).toBe(path.resolve(claudePath));
+      expect(resolved).toBe(path.resolve(TEST_DIR, '.briefed', 'context.md'));
+      expect(fs.readFileSync(path.join(TEST_DIR, '.briefed', '.gitignore'), 'utf-8')).toBe('*\n');
+    });
+  });
+
+  describe('linkContextFile', () => {
+    it('should link every existing agent file exactly once', () => {
+      fs.writeFileSync(path.join(TEST_DIR, 'CLAUDE.md'), '# Mine');
+      fs.writeFileSync(path.join(TEST_DIR, 'AGENTS.md'), '# Agents');
+
+      expect(linkContextFile(TEST_DIR)).toHaveLength(2);
+      expect(linkContextFile(TEST_DIR)).toHaveLength(0); // idempotent
+
+      const claude = fs.readFileSync(path.join(TEST_DIR, 'CLAUDE.md'), 'utf-8');
+      expect(claude.startsWith('# Mine')).toBe(true);
+      expect(claude).toContain('@.briefed/context.md');
     });
 
-    it('should pick AGENTS.md if CLAUDE.md is missing but AGENTS.md exists', () => {
-      const agentsPath = path.join(TEST_DIR, 'AGENTS.md');
-      fs.writeFileSync(agentsPath, 'AGENTS content');
-
-      const resolved = resolveTargetFile(TEST_DIR);
-      expect(resolved).toBe(path.resolve(agentsPath));
-    });
-
-    it('should pick .github/copilot-instructions.md if CLAUDE/AGENTS are missing', () => {
-      const githubDir = path.join(TEST_DIR, '.github');
-      fs.mkdirSync(githubDir, { recursive: true });
-      const copilotPath = path.join(githubDir, 'copilot-instructions.md');
-      fs.writeFileSync(copilotPath, 'Copilot instructions');
-
-      const resolved = resolveTargetFile(TEST_DIR);
-      expect(resolved).toBe(path.resolve(copilotPath));
-    });
-
-    it('should create empty CLAUDE.md if none of the candidate files exist', () => {
-      const resolved = resolveTargetFile(TEST_DIR);
-      const expectedPath = path.resolve(TEST_DIR, 'CLAUDE.md');
-      expect(resolved).toBe(expectedPath);
-      expect(fs.existsSync(expectedPath)).toBe(true);
-      expect(fs.readFileSync(expectedPath, 'utf-8')).toContain('# AI Context');
+    it('should create a starter CLAUDE.md if no agent file exists', () => {
+      linkContextFile(TEST_DIR);
+      const claude = fs.readFileSync(path.join(TEST_DIR, 'CLAUDE.md'), 'utf-8');
+      expect(claude).toContain('# AI Context');
+      expect(claude).toContain('@.briefed/context.md');
     });
   });
 
   describe('getConfig', () => {
-    it('should load default config and resolve target to CLAUDE.md (created) when no .briefed.json exists', () => {
+    it('should default to the no-LLM backend and .briefed/context.md with no config and no keys', () => {
+      vi.stubEnv('GEMINI_API_KEY', '');
+      vi.stubEnv('BRIEFED_API_KEY', '');
+      vi.stubEnv('ANTHROPIC_API_KEY', '');
       const config = getConfig(TEST_DIR);
-      expect(config.backend).toBe('gemini');
-      expect(config.model).toBe('gemini-2.5-flash');
-      expect(config.target).toBe(path.resolve(TEST_DIR, 'CLAUDE.md'));
+      expect(config.backend).toBe('none');
+      expect(config.model).toBe('none');
+      expect(config.target).toBe(path.resolve(TEST_DIR, '.briefed', 'context.md'));
     });
 
     it('should override backend and model if specified in .briefed.json', () => {
@@ -116,14 +112,17 @@ describe('config.ts', () => {
 
       const config = getConfig(TEST_DIR);
       expect(config.window.entries).toBe(25);
-      expect(config.window.days).toBe(7); // default days
+      expect(config.window.days).toBe(0); // default days (age pruning off)
     });
 
     it('should fallback to default config if .briefed.json contains malformed JSON', () => {
       fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), '{ invalid json ');
 
+      vi.stubEnv('GEMINI_API_KEY', '');
+      vi.stubEnv('BRIEFED_API_KEY', '');
+      vi.stubEnv('ANTHROPIC_API_KEY', '');
       const config = getConfig(TEST_DIR);
-      expect(config.backend).toBe('gemini'); // still has default backend
+      expect(config.backend).toBe('none'); // still has default backend
       expect(config.window.entries).toBe(10); // still has default entries
     });
 
@@ -147,9 +146,11 @@ describe('config.ts', () => {
       });
 
       it('should default backend to anthropic if ANTHROPIC_API_KEY is present and no backend in config', () => {
+        vi.stubEnv('GEMINI_API_KEY', '');
         vi.stubEnv('ANTHROPIC_API_KEY', 'some-anthropic-key');
         const config = getConfig(TEST_DIR);
         expect(config.backend).toBe('anthropic');
+        expect(config.model).toBe('claude-haiku-5-5'); // not the gemini default
       });
 
       it('should respect configured backend even if environment keys are present', () => {
@@ -261,7 +262,7 @@ describe('config.ts', () => {
     });
 
     describe('Gemini backend configuration', () => {
-      it('should default model to gemini-2.5-flash when backend is gemini and model is default llama3', () => {
+      it('should default model to gemini-2.5-flash when backend is gemini and no model is set', () => {
         const userConfig = {
           backend: 'gemini',
         };
@@ -327,7 +328,9 @@ describe('config.ts', () => {
           expect(config.apiKey).toBe('env-briefed-key');
         });
 
-        it('should fallback to ANTHROPIC_API_KEY if GEMINI_API_KEY and BRIEFED_API_KEY are not defined', () => {
+        it('should never send ANTHROPIC_API_KEY to Gemini', () => {
+          vi.stubEnv('GEMINI_API_KEY', '');
+          vi.stubEnv('BRIEFED_API_KEY', '');
           vi.stubEnv('ANTHROPIC_API_KEY', 'env-anthropic-key');
 
           const userConfig = {
@@ -336,7 +339,7 @@ describe('config.ts', () => {
           fs.writeFileSync(path.join(TEST_DIR, '.briefed.json'), JSON.stringify(userConfig));
 
           const config = getConfig(TEST_DIR);
-          expect(config.apiKey).toBe('env-anthropic-key');
+          expect(config.apiKey).toBeUndefined();
         });
 
         it('should be undefined if neither config file nor any environment variables have a key', () => {

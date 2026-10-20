@@ -170,26 +170,60 @@ describe('git.ts', () => {
       expect(result.isEmpty).toBe(false);
     });
 
-    it('should handle ignore patterns correctly', () => {
+    it('should pass ignore patterns to git as exclude pathspecs for numstat, raw diff and log', () => {
       mockGitResponses = {
         'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
-        'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/git.ts\n2\t0\tpackage.json\n5\t5\tcustom_ignored/temp.txt\n20\t10\tcustom_ignored/nested/file.js\n0\t1\tREADME.md\n',
+        'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/git.ts\n',
         'diff ORIG_HEAD HEAD': 'diff details here\n',
         'reflog': 'checkout: moving from feature/payments to main\n',
         'log -1': 'checkout: moving from feature/payments to main\n',
+        'log --no-merges': 'Add payments\nFix login\n',
       };
 
-      const result = getDiff(undefined, ['custom_ignored/**']);
+      const result = getDiff(undefined, ['*.lock', 'dist/', 'custom_ignored/**']);
 
-      expect(result.additions).toBe(12); // custom_ignored/temp.txt and custom_ignored/nested/file.js should be excluded
-      expect(result.deletions).toBe(6);
-      expect(result.files).toEqual(['src/git.ts', 'package.json', 'README.md']);
-      expect(result.filesByDir).toEqual({
-        src: ['src/git.ts'],
-        '.': ['package.json', 'README.md'],
-      });
+      const diffCalls = mockExecFileSync.mock.calls
+        .map(call => call[1] as string[])
+        .filter(args => args[0] === 'diff');
+      expect(diffCalls).toHaveLength(2);
+      for (const args of diffCalls) {
+        expect(args).toContain(':(exclude,glob)**/*.lock');
+        expect(args).toContain(':(exclude,glob)**/dist/**');
+        expect(args).toContain(':(exclude,glob)custom_ignored/**');
+      }
+      expect(result.commits).toEqual(['Add payments', 'Fix login']);
       expect(result.sourceBranch).toBe('feature/payments');
+    });
+
+    it('should diff from merge-base when since is given, and return empty when it cannot resolve', () => {
+      mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
+        'rev-parse HEAD': 'hash123\n',
+        'merge-base prevsha HEAD': 'base456\n',
+        'diff base456 HEAD --numstat': '3\t1\tsrc/a.ts\n',
+        'diff base456 HEAD': 'diff from base\n',
+        'reflog': 'checkout: moving from main to feature\n',
+        'log -1': 'wip\n',
+        'log --no-merges': 'wip\n',
+      };
+      expect(getDiff(undefined, [], false, undefined, 'prevsha').rawDiff).toBe('diff from base');
+
+      mockGitResponses['merge-base prevsha HEAD'] = new Error('no merge base');
+      expect(getDiff(undefined, [], false, undefined, 'prevsha').isEmpty).toBe(true);
+    });
+
+    it('should not read "made" from a pull reflog as the branch name', () => {
+      mockGitResponses = {
+        'rev-parse --is-inside-work-tree': 'true\n',
+        'rev-parse HEAD': 'hash123\n',
+        'diff ORIG_HEAD HEAD --numstat': '1\t0\ta.ts\n',
+        'diff ORIG_HEAD HEAD': 'd\n',
+        'reflog': "pull --no-rebase origin master: Merge made by the 'ort' strategy.\n",
+        'log -1': "Merge branch 'master' of github.com:o/r\n",
+        'log --no-merges': '',
+      };
+      expect(getDiff().sourceBranch).toBe('master');
     });
 
     it('should handle rename syntax correctly in parseGitPath', () => {
@@ -212,30 +246,27 @@ describe('git.ts', () => {
       expect(result.sourceBranch).toBe('feature/billing');
     });
 
-    it('should truncate rawDiff if it is longer than 8000 characters', () => {
-      const veryLongDiff = 'a'.repeat(9000);
-      const lines = Array.from({ length: 300 }, (_, i) => `line ${i}`).join('\n');
-      const longDiffWithLines = `${veryLongDiff}\n${lines}`;
+    it('should give every file a slice of the diff budget when rawDiff exceeds 8000 characters', () => {
+      const bigFile = `diff --git a/big.ts b/big.ts\n${'a'.repeat(20000)}\n`;
+      const smallFile = 'diff --git a/small.ts b/small.ts\n+tiny change\n';
 
       mockGitResponses = {
         'rev-parse --is-inside-work-tree': 'true\n',
         'rev-parse HEAD': 'hash123\n',
-        'diff ORIG_HEAD HEAD --numstat': '10\t5\tsrc/git.ts\n',
-        'diff ORIG_HEAD HEAD --stat': 'src/git.ts | 15 +++++-----\n1 file changed, 10 insertions(+), 5 deletions(-)\n',
-        'diff ORIG_HEAD HEAD': longDiffWithLines,
+        'diff ORIG_HEAD HEAD --numstat': '10\t5\tbig.ts\n1\t0\tsmall.ts\n',
+        'diff ORIG_HEAD HEAD --stat': 'big.ts | 15 +++++-----\n',
+        'diff ORIG_HEAD HEAD': bigFile + smallFile,
         'reflog': 'commit: initial\n',
         'log -1': 'Merge branch \'feature/auth\'\n',
+        'log --no-merges': '',
       };
 
       const result = getDiff();
 
-      expect(result.rawDiff).toContain('src/git.ts | 15 +++++-----');
-      expect(result.rawDiff).toContain('[... truncated,');
-      expect(result.rawDiff.length).toBeLessThan(longDiffWithLines.length);
-
-      // Verify it has prepended stat diff and first 200 lines
-      const totalOmitted = longDiffWithLines.split(/\r?\n/).length - 200;
-      expect(result.rawDiff).toContain(`[... truncated, ${totalOmitted} lines omitted]`);
+      expect(result.rawDiff).toContain('big.ts | 15 +++++-----');
+      expect(result.rawDiff).toContain('[... truncated]');
+      expect(result.rawDiff).toContain('+tiny change'); // the small file survives the big one
+      expect(result.rawDiff.length).toBeLessThan(8000 + 200);
     });
   });
 });

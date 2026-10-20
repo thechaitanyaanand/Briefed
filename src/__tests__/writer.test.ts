@@ -11,7 +11,7 @@ const DEFAULT_CONFIG: BriefedConfig = {
   target: TEST_FILE,
   backend: 'none',
   model: 'none',
-  window: { days: 7, entries: 5 },
+  window: { days: 0, entries: 5 },
   ignored: [],
 };
 
@@ -142,7 +142,7 @@ FILES: file1.ts
 
       expect(fs.existsSync(TEST_FILE)).toBe(true);
       const content = fs.readFileSync(TEST_FILE, 'utf-8');
-      expect(content).toContain('# AI Context');
+      expect(content).toContain('# Recent changes');
       expect(content).toContain('<!-- BRIEFED_START -->');
       expect(content).toContain('## [2026-06-01T12:00:00Z] abcdef');
       expect(content).toContain('New changes');
@@ -212,7 +212,7 @@ Old summary
         filesChanged: [],
       };
 
-      writeEntry(newEntry, DEFAULT_CONFIG); // days limit is 7
+      writeEntry(newEntry, { ...DEFAULT_CONFIG, window: { days: 7, entries: 5 } });
 
       const content = fs.readFileSync(TEST_FILE, 'utf-8');
       expect(content).toContain('newcommit');
@@ -246,7 +246,7 @@ Summary 1
 
       const limitConfig: BriefedConfig = {
         ...DEFAULT_CONFIG,
-        window: { days: 100, entries: 3 }, // Only keep 3 entries
+        window: { days: 0, entries: 3 }, // Only keep 3 entries
       };
 
       writeEntry(newEntry, limitConfig);
@@ -286,7 +286,7 @@ One two three four five six seven eight nine ten
 
       const wordLimitConfig: BriefedConfig = {
         ...DEFAULT_CONFIG,
-        window: { days: 100, entries: 100, maxTotalWords: 25 }, // Should allow c5 (10), c4 (10), totaling 20. Adding c3 would hit 30, so c3, c2, c1 should be pruned!
+        window: { days: 0, entries: 100, maxTotalWords: 25 }, // Should allow c5 (10), c4 (10), totaling 20. Adding c3 would hit 30, so c3, c2, c1 should be pruned!
       };
 
       writeEntry(newEntry, wordLimitConfig);

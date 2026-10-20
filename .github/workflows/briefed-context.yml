@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Check API Keys availability
         id: check-keys
@@ -50,7 +50,7 @@ jobs:
 
       - name: Run briefed
         if: steps.check-keys.outputs.has_keys == 'true'
-        run: node dist/cli.js run
+        run: node dist/cli.js run --target CLAUDE.md
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

@@ -1,47 +1,29 @@
-# Briefed Core LLM Prompts
+# Briefed Core LLM Prompt
 
-Briefed utilizes highly structured system and instruction prompts to ensure that active LLM engines (like Gemini, Claude, or local Ollama models) output concise, category-based context updates without conversational bloat.
-
----
-
-## 🤖 System Prompt (Instructions)
-
-This is the system-level instruction passed to the LLM (and used directly as the `system` parameter in Ollama / Claude APIs):
+Every backend (Gemini, Claude, Ollama) gets the same single prompt, built in `src/summarize.ts` (`constructPrompt`).
 
 ```text
-You are a precise developer assistant. Summarize the git diff.
-You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
-Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
+You write the "recent changes" note that an AI coding agent reads before working in this repository.
+From the commits and diff below, list only facts that change how the agent should work: new, renamed or removed commands, scripts, modules, public APIs, config keys, environment variables, dependencies, conventions, and breaking behavior changes.
+Output 1 to 5 lines, each starting with "- ". No headings, no file lists, no line counts, no markdown fences, no filler.
+If nothing matters to an agent, output exactly: - Minor changes only.
 
-Format:
-FILES: <comma-separated list of directories/files changed>
-ADDED: <key features, modules or code additions, separated by |>
-REMOVED: <key removals or deprecations, separated by |>
-RENAMED: <files renamed, e.g. path/to/old -> path/to/new, separated by |>
-DEPS: <dependency changes or change counts, e.g., "X additions, Y deletions">
+Commits:
+<non-merge commit subjects in the range, newest first>
+
+Changed files:
+<one per line, ignored patterns already excluded>
+
+Git diff:
+<scrubbed, budgeted diff>
 ```
 
----
+## Design choices
 
-## 📝 User Prompt (Git Diff Content)
-
-This is the user-level prompt containing the active git diff payload and stats sent to the model:
-
-```text
-Git Diff:
-<raw diff contents after credentials scrubbing and smart diff truncation>
-
-List of changed files:
-<list of modified files, one per line>
-
-Change Statistics:
-Additions: <number of insertions>
-Deletions: <number of deletions>
-```
-
----
-
-## 💡 How It Works
-1. **Credentials Scrubbing**: Before the diff is sent to any cloud API, Briefed parses and replaces sensitive credentials (API keys, connection strings, private keys, JWTs) with `[REDACTED]` client-side.
-2. **Smart Diff Truncation**: If the diff payload is larger than 8,000 characters, it is truncated to a clean `git diff --stat` followed by the first 200 lines to prevent token bloat or API timeouts.
-3. **Word Limit Capping**: The raw output returned by the LLM is sanitized to strip reasoning `<think>` tags, then capped at your configured word budget (default `250` words) by truncating cleanly at the last complete sentence/line boundary.
+1. **Written for the agent, not as a changelog.** "Bug report template added" doesn't help an agent write code. "Auth moved to src/security" does.
+2. **Commit subjects come first.** They carry the author's intent at no cost. They're also the whole summary when no LLM is configured.
+3. **No empty categories.** The old `FILES/ADDED/REMOVED/RENAMED/DEPS` schema used tokens on empty lines in every entry. The file list is added once by the writer, capped at 20 files.
+4. **Credential scrubbing for every backend**, Ollama included, because `apiUrl` can point at a remote host.
+5. **Diff budget:** over 8,000 characters, each file gets an equal share after a `git diff --stat` header, so one huge file can't push the rest out.
+6. **Output cleanup:** `<think>` blocks are stripped, then the summary is capped at `maxSummaryWords` (default 250) on a line boundary.
+7. **Gemini Flash runs with `thinkingBudget: 0`**: summarizing doesn't need reasoning tokens, and they add latency and cost.

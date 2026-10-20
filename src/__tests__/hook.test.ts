@@ -41,6 +41,7 @@ describe('hook.ts', () => {
 
     expect(result.installed).toContain('post-merge');
     expect(result.installed).toContain('post-rewrite');
+    expect(result.installed).toContain('post-checkout');
     expect(result.skipped).toHaveLength(0);
     expect(result.warnings).toHaveLength(0);
 
@@ -52,7 +53,7 @@ describe('hook.ts', () => {
 
     const mergeContent = fs.readFileSync(postMergePath, 'utf-8');
     expect(mergeContent).toContain('# BRIEFED_HOOK');
-    expect(mergeContent).toContain('briefed run');
+    expect(mergeContent).toContain('($b run');
   });
 
   it('should install hooks under .husky if .husky exists', () => {
@@ -90,7 +91,7 @@ describe('hook.ts', () => {
     expect(updatedMerge).toContain('echo "User merge hook"');
     expect(updatedMerge).toContain('# BRIEFED_HOOK_APPENDED_START');
     expect(updatedMerge).toContain('# BRIEFED_HOOK_APPENDED_END');
-    expect(updatedMerge).toContain('briefed run');
+    expect(updatedMerge).toContain('($b run');
   });
 
   it('should normalize all line endings to Unix LF', () => {
@@ -187,6 +188,6 @@ describe('hook.ts', () => {
     expect(fs.existsSync(postRewritePath)).toBe(true);
     
     const mergeContent = fs.readFileSync(postMergePath, 'utf-8');
-    expect(mergeContent).toContain('npx --yes --package=briefed-cli briefed run 2>/dev/null');
+    expect(mergeContent).toContain('npx --yes --package=briefed-cli briefed');
   });
 });

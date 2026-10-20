@@ -1,6 +1,5 @@
 import { execFileSync } from 'child_process';
 import * as path from 'path';
-import { minimatch } from 'minimatch';
 import { DiffResult } from './types.js';
 
 /**
@@ -56,40 +55,47 @@ function parseGitPath(path: string): string {
 }
 
 /**
- * Checks if a file path matches any of the ignored glob patterns.
+ * Converts .gitignore-style patterns into git exclude pathspecs so git itself
+ * drops ignored files from numstat, the raw diff, and the stat output alike.
+ * "*.lock" and "dist/" match at any depth; patterns containing "/" are root-anchored.
  */
-function isIgnored(filePath: string, ignored: string[] = []): boolean {
-  const normalizedPath = filePath.replace(/\\/g, '/');
-  for (const pattern of ignored) {
-    const normalizedPattern = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern;
-
-    // Check if it's a direct match or matches subdirectories
-    if (minimatch(normalizedPath, pattern, { dot: true, matchBase: true })) {
-      return true;
-    }
-    if (minimatch(normalizedPath, normalizedPattern, { dot: true, matchBase: true })) {
-      return true;
-    }
-    // Check if the pattern is a directory prefix
-    if (normalizedPath === normalizedPattern || normalizedPath.startsWith(normalizedPattern + '/')) {
-      return true;
-    }
-    // Check if pattern is a directory name in nested segments
-    if (!normalizedPattern.includes('/')) {
-      const pathSegments = normalizedPath.split('/');
-      if (pathSegments.includes(normalizedPattern)) {
-        return true;
-      }
-    }
+export function toExcludePathspecs(ignored: string[] = []): string[] {
+  const specs: string[] = [];
+  for (const raw of ignored) {
+    const pattern = raw.replace(/\\/g, '/').replace(/\/+$/, '');
+    if (!pattern) continue;
+    const base = pattern.includes('/') ? pattern : `**/${pattern}`;
+    specs.push(`:(exclude,glob)${base}`, `:(exclude,glob)${base}/**`);
   }
-  return false;
+  return specs;
+}
+
+const EMPTY_TREE = '4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc';
+const MAX_DIFF_CHARS = 8000;
+
+/**
+ * Keeps the diff under MAX_DIFF_CHARS by giving every file an equal slice,
+ * so a single huge file can't push the rest of the change out of the prompt.
+ */
+function budgetDiff(rawDiff: string, diffStat: string): string {
+  if (rawDiff.length <= MAX_DIFF_CHARS) {
+    return rawDiff;
+  }
+  const sections = rawDiff.split(/^(?=diff --git )/m);
+  // ponytail: equal split wastes budget left over by small files; redistribute if summaries miss detail
+  const perFile = Math.floor(MAX_DIFF_CHARS / sections.length);
+  const body = sections
+    .map(section => section.length > perFile ? `${section.slice(0, perFile)}\n[... truncated]\n` : section)
+    .join('');
+  return `${diffStat}\n\n${body}`;
 }
 
 /**
- * Gets the diff result between ORIG_HEAD and HEAD.
- * Returns an empty DiffResult if ORIG_HEAD is missing or any error occurs.
+ * Gets the diff result between a base ref and HEAD.
+ * Base is merge-base(since, HEAD) when `since` is given (post-checkout), otherwise
+ * ORIG_HEAD -> HEAD~1 -> empty tree. Returns an empty DiffResult on any error.
  */
-export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, targetFile?: string): DiffResult {
+export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, targetFile?: string, since?: string): DiffResult {
   // UX-03: Explicit check — throw clear error if not in a Git repository
   if (!isGitRepository(cwd)) {
     throw new Error(
@@ -118,25 +124,35 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
   const relativeTarget = targetFile
     ? path.relative(cwd || process.cwd(), targetFile).replace(/\\/g, '/')
     : '';
-  const excludeArgs = relativeTarget ? ['--', '.', `:(exclude)${relativeTarget}`] : [];
+  const excludeArgs = [
+    '--', '.',
+    ...toExcludePathspecs(ignored),
+    ...(relativeTarget ? [`:(exclude)${relativeTarget}`] : []),
+  ];
 
-  let baseRef = 'ORIG_HEAD';
-  let numstatOutput = '';
-  try {
-    numstatOutput = runGit(['diff', 'ORIG_HEAD', 'HEAD', '--numstat', ...excludeArgs], cwd);
-    baseRef = 'ORIG_HEAD';
-  } catch (error) {
+  let candidates = ['ORIG_HEAD', 'HEAD~1', EMPTY_TREE];
+  if (since) {
     try {
-      numstatOutput = runGit(['diff', 'HEAD~1', 'HEAD', '--numstat', ...excludeArgs], cwd);
-      baseRef = 'HEAD~1';
-    } catch (err2) {
-      try {
-        numstatOutput = runGit(['diff', '4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc', 'HEAD', '--numstat', ...excludeArgs], cwd);
-        baseRef = '4b825dc642cb6eb9a0fb9e4c4e2921d1d61301fc';
-      } catch (err3) {
-        return fallbackResult;
-      }
+      candidates = [runGit(['merge-base', since, 'HEAD'], cwd)];
+    } catch {
+      // Unrelated history or a null ref (e.g. new worktree): nothing meaningful to diff
+      return fallbackResult;
     }
+  }
+
+  let baseRef = '';
+  let numstatOutput = '';
+  for (const candidate of candidates) {
+    try {
+      numstatOutput = runGit(['diff', candidate, 'HEAD', '--numstat', ...excludeArgs], cwd);
+      baseRef = candidate;
+      break;
+    } catch {
+      // try next candidate
+    }
+  }
+  if (!baseRef) {
+    return fallbackResult;
   }
 
   if (verbose || process.argv.includes('-v') || process.argv.includes('--verbose')) {
@@ -163,12 +179,6 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
       const delVal = parts[1];
       const rawPath = parts.slice(2).join(' ');
       const parsedPath = parseGitPath(rawPath);
-
-      if (isIgnored(parsedPath, ignored)) {
-        continue;
-      }
-
-
 
       files.push(parsedPath);
       if (addVal !== '-') {
@@ -198,7 +208,8 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
   // 1. Try reflog
   try {
     const reflogMsg = runGit(['reflog', '-1', '--format=%gs'], cwd);
-    const mergeRegex = /merge\s+([^\s:]+)/i;
+    // Anchored: reflog reads "merge <branch>: ..."; unanchored, a pull's "Merge made by" yielded "made"
+    const mergeRegex = /^merge\s+([^\s:]+)/i;
     const mergeMatch = reflogMsg.match(mergeRegex);
     if (mergeMatch) {
       sourceBranch = mergeMatch[1];
@@ -245,19 +256,25 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
     }
   }
 
-  // Smart Diff Truncation
   let rawDiff = rawDiffOutput;
-  if (rawDiffOutput.length > 8000) {
+  if (rawDiffOutput.length > MAX_DIFF_CHARS) {
+    let diffStat = '';
     try {
-      const diffStat = runGit(['diff', baseRef, 'HEAD', '--stat'], cwd);
-      const allDiffLines = rawDiffOutput.split(/\r?\n/);
-      const totalLinesCount = allDiffLines.length;
-      const first200Lines = allDiffLines.slice(0, 200).join('\n');
-      const linesOmitted = Math.max(0, totalLinesCount - 200);
-      rawDiff = `${diffStat}\n\n${first200Lines}\n[... truncated, ${linesOmitted} lines omitted]`;
-    } catch (e) {
-      // Fallback in case stat diff fails
+      diffStat = runGit(['diff', baseRef, 'HEAD', '--stat', ...excludeArgs], cwd);
+    } catch {
+      // stat is a nice-to-have
     }
+    rawDiff = budgetDiff(rawDiffOutput, diffStat);
+  }
+
+  // Commit subjects carry the author's intent for free; they feed both the LLM and the no-LLM summary
+  let commits: string[] = [];
+  try {
+    const range = baseRef === EMPTY_TREE ? ['HEAD'] : [`${baseRef}..HEAD`];
+    commits = runGit(['log', '--no-merges', '-n', '30', '--format=%s', ...range], cwd)
+      .split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  } catch {
+    // Ignore errors
   }
 
   const isEmpty = files.length === 0;
@@ -270,6 +287,7 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
     rawDiff,
     commitHash,
     sourceBranch,
+    commits,
     isEmpty,
   };
 }
@@ -285,3 +303,4 @@ export function getCurrentHash(cwd?: string): string {
     return '';
   }
 }
+

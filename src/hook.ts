@@ -1,60 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
-const POST_MERGE_CONTENT = `#!/bin/sh
-# BRIEFED_HOOK
-cd "$(git rev-parse --show-toplevel)" || exit 0
-if command -v briefed >/dev/null 2>&1; then
-  briefed run
-elif [ -x "./node_modules/.bin/briefed" ]; then
-  ./node_modules/.bin/briefed run
-else
-  npx --yes --package=briefed-cli briefed run 2>/dev/null
-fi
-exit 0
-`;
+// scripts/ is the single source of truth for hook bodies (shipped in the npm package).
+const SCRIPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts');
+const HOOK_NAMES = ['post-merge', 'post-rewrite', 'post-checkout'];
 
-const POST_REWRITE_CONTENT = `#!/bin/sh
-# BRIEFED_HOOK
-[ "$1" = "rebase" ] || exit 0
-cd "$(git rev-parse --show-toplevel)" || exit 0
-if command -v briefed >/dev/null 2>&1; then
-  briefed run
-elif [ -x "./node_modules/.bin/briefed" ]; then
-  ./node_modules/.bin/briefed run
-else
-  npx --yes --package=briefed-cli briefed run 2>/dev/null
-fi
-exit 0
-`;
-
-const HOOKS = [
-  {
-    name: 'post-merge',
-    fullContent: POST_MERGE_CONTENT,
-    bodyContent: `cd "$(git rev-parse --show-toplevel)" || exit 0
-if command -v briefed >/dev/null 2>&1; then
-  briefed run
-elif [ -x "./node_modules/.bin/briefed" ]; then
-  ./node_modules/.bin/briefed run
-else
-  npx --yes --package=briefed-cli briefed run 2>/dev/null
-fi`
-  },
-  {
-    name: 'post-rewrite',
-    fullContent: POST_REWRITE_CONTENT,
-    bodyContent: `[ "$1" = "rebase" ] || exit 0
-cd "$(git rev-parse --show-toplevel)" || exit 0
-if command -v briefed >/dev/null 2>&1; then
-  briefed run
-elif [ -x "./node_modules/.bin/briefed" ]; then
-  ./node_modules/.bin/briefed run
-else
-  npx --yes --package=briefed-cli briefed run 2>/dev/null
-fi`
-  }
-];
+const HOOKS = HOOK_NAMES.map(name => {
+  const fullContent = fs.readFileSync(path.join(SCRIPTS_DIR, name), 'utf-8').replace(/\r\n/g, '\n');
+  // When chained into a user's existing hook, run in a subshell so our cd/exit can't affect theirs
+  const body = fullContent.split('# BRIEFED_HOOK\n')[1].replace(/\nexit 0\n?$/, '');
+  return { name, fullContent, bodyContent: `(\n${body}\n)` };
+});
 
 function findGitPaths(cwd: string): { gitDir: string; projectRoot: string } {
   let dir = path.resolve(cwd);
@@ -87,7 +44,7 @@ function findGitPaths(cwd: string): { gitDir: string; projectRoot: string } {
 }
 
 /**
- * Installs Briefed post-merge and post-rewrite Git hooks.
+ * Installs Briefed post-merge, post-rewrite and post-checkout Git hooks.
  * Targets `.husky/` directory if it exists, otherwise defaults to `.git/hooks/`.
  */
 export function install(cwd?: string): { installed: string[], skipped: string[], warnings: string[] } {
@@ -167,10 +124,8 @@ export function uninstall(cwd?: string): void {
     dirsToCheck.push(gitHooksDir);
   }
 
-  const hookNames = ['post-merge', 'post-rewrite'];
-
   for (const dir of dirsToCheck) {
-    for (const name of hookNames) {
+    for (const name of HOOK_NAMES) {
       const hookPath = path.join(dir, name);
       if (fs.existsSync(hookPath)) {
         const content = fs.readFileSync(hookPath, 'utf-8');

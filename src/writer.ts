@@ -3,6 +3,13 @@ import * as path from 'path';
 import { BriefedConfig, ContextEntry } from './types.js';
 
 /**
+ * Synchronous sleep that blocks without spinning the CPU.
+ */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
  * Robustly renames a file with multiple retry attempts on Windows systems
  * to gracefully handle brief EPERM, EBUSY, or EACCES handle locks.
  */
@@ -16,10 +23,7 @@ function robustRename(from: string, to: string): void {
     } catch (err: any) {
       lastError = err;
       if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES') {
-        const start = Date.now();
-        while (Date.now() - start < 15) {
-          // busy wait 15ms
-        }
+        sleepSync(15);
       } else {
         throw err;
       }
@@ -132,10 +136,7 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
       break;
     } catch (err: any) {
       if (err.code === 'EEXIST') {
-        const start = Date.now();
-        while (Date.now() - start < 50) {
-          // busy wait
-        }
+        sleepSync(50);
       } else {
         break;
       }
@@ -148,7 +149,7 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
   try {
     let fileContent = '';
     if (!fs.existsSync(config.target)) {
-      fileContent = `# AI Context\n\nManaged by Briefed.\n\n${startMarker}\n${endMarker}`;
+      fileContent = `# Recent changes\n\nManaged by Briefed from git history. Newest first.\n\n${startMarker}\n${endMarker}`;
       const tmpPath = `${config.target}.tmp`;
       fs.writeFileSync(tmpPath, fileContent, 'utf-8');
       robustRename(tmpPath, config.target);
