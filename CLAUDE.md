@@ -17,12 +17,22 @@
 - **Dynamic Blocks**: Do not manually modify the content between the BRIEFED start and end markers.
 
 <!-- BRIEFED_START -->
+## [2026-10-20T14:29:17.374Z] 0d0d885ed5fa1579e62e7168aed5343ae577919f (master)
+- New `briefed context` command.
+- The default context file target is now `.briefed/context.md`.
+- `briefed init` now links `.briefed/context.md` from `CLAUDE.md`, `AGENTS.md`, and `.github/copilot-instructions.md`.
+- `briefed run` has a new `--since <ref>` option to pick a base.
+- Existing Briefed hooks are now upgraded automatically during installation.
+
+FILES: CHANGELOG.md, README.md, docs/BUILDING.md, docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html, package.json, scripts/post-checkout, scripts/post-merge, scripts/post-rewrite, src/__tests__/git.test.ts, src/__tests__/hook.test.ts, src/cli.ts, src/config.ts, src/git.ts, src/hook.ts, src/writer.ts
+
 ## [2026-06-06T12:44:04.750Z] c3ff29794af1184a15561063a592174f68b7a515 (master)
-FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html
 ADDED: Updated npm package link in documentation footers to 'briefed-cli'
 REMOVED: Outdated npm package link 'briefed' from documentation footers
 RENAMED:
 DEPS: 5 additions, 5 deletions
+
+FILES: docs/ci-cd.html, docs/cli-reference.html, docs/configuration.html, docs/getting-started.html, docs/index.html
 
 ## [2026-06-06T12:39:29.985Z] 2eb13fbff1c6032269416725aec1957d4192b37e (master)
 ADDED: Bug report template|Feature request template|Pull request template|Code of Conduct|Contribution guidelines|Local development setup instructions|Security policy
@@ -81,12 +91,4 @@ RENAMED:
 DEPS: 55 additions, 9 deletions
 
 FILES: .github/workflows/briefed-context.yml, README.md, docs/ci-cd.html
-
-## [2026-06-02T16:35:50.594Z] 6c9e8a5c51b27cdb8e76eb39dbc30b1eff21bcfc (master)
-ADDED: Detailed explanation of local-first vs. CI/CD workflows for Briefed; instructions for configuring GitHub repository secrets (API keys) for CI/CD automation; npm cache added to Node.js setup in GitHub Action.
-REMOVED: General introductory sentence about CI/CD deployment replaced by more detailed workflow explanations.
-RENAMED:
-DEPS: 32 additions, 3 deletions
-
-FILES: README.md
 <!-- BRIEFED_END -->
