@@ -110,32 +110,46 @@ describe('hook.ts', () => {
     expect(content).toContain('\n');
   });
 
-  it('should skip installation if Briefed hook sentinel is already present', () => {
+  it('should skip hooks that are already current', () => {
     fs.mkdirSync(GIT_DIR, { recursive: true });
-    const hooksDir = path.join(GIT_DIR, 'hooks');
-    fs.mkdirSync(hooksDir, { recursive: true });
-
-    const existingMerge = '#!/bin/sh\n# BRIEFED_HOOK\n...';
-    fs.writeFileSync(path.join(hooksDir, 'post-merge'), existingMerge, 'utf-8');
+    install(TEST_DIR);
 
     const result = install(TEST_DIR);
 
-    expect(result.skipped).toContain('post-merge');
-    expect(result.installed).not.toContain('post-merge');
+    expect(result.skipped).toEqual(['post-merge', 'post-rewrite', 'post-checkout']);
+    expect(result.installed).toHaveLength(0);
+    expect(result.upgraded).toHaveLength(0);
   });
 
-  it('should skip installation if Briefed appended sentinel is already present', () => {
+  it('should upgrade an outdated standalone Briefed hook', () => {
     fs.mkdirSync(GIT_DIR, { recursive: true });
     const hooksDir = path.join(GIT_DIR, 'hooks');
     fs.mkdirSync(hooksDir, { recursive: true });
 
-    const existingMerge = '#!/bin/sh\n# BRIEFED_HOOK_APPENDED_START\n...\n# BRIEFED_HOOK_APPENDED_END';
+    fs.writeFileSync(path.join(hooksDir, 'post-merge'), '#!/bin/sh\n# BRIEFED_HOOK\nbriefed run\nexit 0\n', 'utf-8');
+
+    const result = install(TEST_DIR);
+
+    expect(result.upgraded).toContain('post-merge');
+    expect(fs.readFileSync(path.join(hooksDir, 'post-merge'), 'utf-8')).toContain('($b run');
+  });
+
+  it('should refresh only the Briefed block inside a chained user hook', () => {
+    fs.mkdirSync(GIT_DIR, { recursive: true });
+    const hooksDir = path.join(GIT_DIR, 'hooks');
+    fs.mkdirSync(hooksDir, { recursive: true });
+
+    const existingMerge = '#!/bin/sh\necho "mine"\n# BRIEFED_HOOK_APPENDED_START\nbriefed run\n# BRIEFED_HOOK_APPENDED_END\necho "after"\n';
     fs.writeFileSync(path.join(hooksDir, 'post-merge'), existingMerge, 'utf-8');
 
     const result = install(TEST_DIR);
 
-    expect(result.skipped).toContain('post-merge');
-    expect(result.installed).not.toContain('post-merge');
+    expect(result.upgraded).toContain('post-merge');
+    const updated = fs.readFileSync(path.join(hooksDir, 'post-merge'), 'utf-8');
+    expect(updated).toContain('echo "mine"');
+    expect(updated).toContain('echo "after"');
+    expect(updated).toContain('($b run');
+    expect(updated).not.toContain('\nbriefed run\n');
   });
 
   it('should uninstall/delete standalone hooks', () => {

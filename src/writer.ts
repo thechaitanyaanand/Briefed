@@ -260,6 +260,20 @@ export function writeEntry(entry: ContextEntry, config: BriefedConfig): void {
 }
 
 /**
+ * Returns the raw text between the BRIEFED markers, or '' if there is none.
+ */
+export function readContextBlock(config: BriefedConfig): string {
+  try {
+    const content = fs.readFileSync(config.target, 'utf-8');
+    const start = content.indexOf('<!-- BRIEFED_START -->');
+    const end = content.indexOf('<!-- BRIEFED_END -->');
+    return start !== -1 && end > start ? content.slice(start + '<!-- BRIEFED_START -->'.length, end).trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Reads the target file, parses the entries inside the markers, and returns
  * the first/latest entry, or null if none exist or the file doesn't exist.
  */

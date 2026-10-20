@@ -19,7 +19,7 @@
     <div class="marquee-wrapper-top">
       <div class="marquee-content-top">
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
-        <span>⚡ VERSION 0.9.0-beta.9 IS LIVE! ⚡</span>
+        <span>⚡ VERSION 0.10.0 IS LIVE! ⚡</span>
         <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
       </div>
@@ -98,7 +98,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Check API Keys availability
         id: check-keys
@@ -124,7 +124,7 @@ jobs:
 
       - name: Run briefed
         if: steps.check-keys.outputs.has_keys == 'true'
-        run: briefed run
+        run: briefed run --target CLAUDE.md
         env:
           BRIEFED_API_KEY: ${{ secrets.BRIEFED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -154,12 +154,15 @@ jobs:
         <h3>3. <code>git update-ref ORIG_HEAD $(git rev-parse HEAD~1)</code></h3>
         <p>During local merges, Git sets <code>ORIG_HEAD</code> automatically. CI runners don't have this reference, so we set it manually to <code>HEAD~1</code> (the previous commit) before running Briefed.</p>
 
-        <h3>4. <code>[skip ci]</code> in the commit message</h3>
+        <h3>4. <code>briefed run --target CLAUDE.md</code></h3>
+        <p>Locally, Briefed writes to the gitignored <code>.briefed/context.md</code>. In CI the point is a committed, shared file, so the workflow writes straight into <code>CLAUDE.md</code> (one writer, so no conflicts). Use <code>AGENTS.md</code> instead if that's your agent file.</p>
+
+        <h3>5. <code>[skip ci]</code> in the commit message</h3>
         <p>When the workflow commits the updated context file back to the repo, it would normally trigger another workflow run — creating an infinite loop. The <code>[skip ci]</code> tag instructs GitHub Actions to skip that trigger.</p>
 
         <div class="brutal-callout callout-violet">
           <div class="callout-title">🔑 Adding GitHub secrets</div>
-          <p class="callout-body">Go to your repository → <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong> → <strong>New repository secret</strong>. Add <code>GEMINI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code>. Without a key configured, Briefed falls back to the mechanical (no-LLM) summarizer automatically — so the workflow still works, just with less semantic detail.</p>
+          <p class="callout-body">Go to your repository → <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong> → <strong>New repository secret</strong>. Add <code>GEMINI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code>. Without a key, Briefed summarizes from commit messages and PR titles instead. Remove the <code>has_keys</code> conditions if you want that mode in CI too.</p>
         </div>
       </article>
 

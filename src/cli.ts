@@ -7,9 +7,9 @@ import * as readline from 'readline';
 import { parseArgs, ParseArgsConfig } from 'util';
 import { createRequire } from 'module';
 import { getConfig, linkContextFile, CONTEXT_FILE, DEFAULT_MODELS } from './config.js';
-import { getDiff } from './git.js';
+import { getDiff, gitPath } from './git.js';
 import { summarize } from './summarize.js';
-import { writeEntry, getLastEntry } from './writer.js';
+import { writeEntry, getLastEntry, readContextBlock } from './writer.js';
 import { install, uninstall } from './hook.js';
 import { BriefedConfig } from './types.js';
 
@@ -170,8 +170,11 @@ async function runInit(values: Record<string, any>): Promise<void> {
   if (result.installed.length > 0) {
     console.log(c.green(`✓ Hooks installed: ${result.installed.join(', ')}`));
   }
+  if (result.upgraded.length > 0) {
+    console.log(c.green(`✓ Hooks upgraded to the current version: ${result.upgraded.join(', ')}`));
+  }
   if (result.skipped.length > 0) {
-    console.log(c.gray(`· Hooks already present (skipped): ${result.skipped.join(', ')}`));
+    console.log(c.gray(`· Hooks already up to date: ${result.skipped.join(', ')}`));
   }
   for (const warning of result.warnings) {
     console.log(c.yellow(`  ⚠ ${warning}`));
@@ -260,17 +263,59 @@ async function runSync(values: Record<string, any>): Promise<void> {
   }
 
   writeEntry(summarizeOutput.entry, cfg);
-  console.log(c.green(`✓ Context file updated: ${diff.commitHash} → ${cfg.target}`));
+  const elapsedMs = Date.now() - startTime;
+  recordRun({
+    date: summarizeOutput.entry.date,
+    commit: diff.commitHash,
+    backend: cfg.backend,
+    used: summarizeOutput.backendUsed,
+    skippedLLM: summarizeOutput.skippedLLM,
+    ms: elapsedMs,
+  });
+  console.log(c.green(`✓ Context file updated (${summarizeOutput.backendUsed}, ${elapsedMs} ms): ${diff.commitHash.slice(0, 7)} → ${cfg.target}`));
 
   if (values.verbose) {
     console.log(`Diff stats: ${diff.additions} insertions, ${diff.deletions} deletions, ${diff.files.length} changed files`);
     console.log(`Summarizer used: ${summarizeOutput.backendUsed} (Skipped LLM: ${summarizeOutput.skippedLLM})`);
-    console.log(`Process elapsed: ${Date.now() - startTime} ms`);
+    console.log(`Process elapsed: ${elapsedMs} ms`);
+  }
+}
+
+interface RunRecord {
+  date: string;
+  commit: string;
+  backend: string;
+  used: string;
+  skippedLLM: boolean;
+  ms: number;
+}
+
+// One JSON line per run in .git/ (never committed). Local only: nothing is sent anywhere.
+// ponytail: grows ~120 bytes per run with no rotation; trim it if anyone reaches megabytes
+const STATS_FILE = 'briefed-stats.jsonl';
+
+function recordRun(record: RunRecord): void {
+  try {
+    fs.appendFileSync(gitPath(STATS_FILE), `${JSON.stringify(record)}\n`);
+  } catch {
+    // Stats are a nice-to-have; never fail a run over them
+  }
+}
+
+function readRuns(): RunRecord[] {
+  try {
+    return fs.readFileSync(gitPath(STATS_FILE), 'utf-8').split('\n').filter(Boolean).map(line => JSON.parse(line));
+  } catch {
+    return [];
   }
 }
 
 function runStatus(): void {
   const cfg = getConfig();
+  const lastRun = readRuns().at(-1);
+  if (lastRun) {
+    console.log(c.bold('Last run:    ') + c.cyan(`${lastRun.date} (${lastRun.used}, ${lastRun.ms} ms)`));
+  }
   const lastEntry = getLastEntry(cfg);
   if (!lastEntry) {
     console.log(c.yellow(`No context entries found in ${cfg.target}.`));
@@ -284,6 +329,33 @@ function runStatus(): void {
   }
   console.log(c.bold('\nSummary:'));
   console.log(lastEntry.summary);
+}
+
+function runContext(): void {
+  // For agent session-start hooks: whatever this prints is added to the agent's context
+  const block = readContextBlock(getConfig());
+  if (block) {
+    console.log(`# Recent upstream changes (Briefed)\n\n${block}`);
+  }
+}
+
+function runStats(): void {
+  const runs = readRuns();
+  const cfg = getConfig();
+  const block = readContextBlock(cfg);
+  const entries = (block.match(/^## \[/gm) ?? []).length;
+  const words = block.split(/\s+/).filter(Boolean).length;
+  console.log(c.bold('Context file: ') + `${entries} entries, ${words} words (${cfg.target})`);
+  if (runs.length === 0) {
+    console.log(c.gray('No runs recorded yet. Stats start with the next "briefed run".'));
+    return;
+  }
+  const llm = runs.filter(r => r.used !== 'none').length;
+  const fellBack = runs.filter(r => r.backend !== 'none' && r.used === 'none' && !r.skippedLLM).length;
+  const avgMs = Math.round(runs.reduce((sum, r) => sum + r.ms, 0) / runs.length);
+  console.log(c.bold('Runs:         ') + `${runs.length} (first ${runs[0].date.slice(0, 10)}, last ${runs.at(-1)!.date.slice(0, 10)})`);
+  console.log(c.bold('Summaries:    ') + `${llm} LLM, ${runs.length - llm} commit-log` + (fellBack ? c.yellow(` (${fellBack} fell back after an LLM error)`) : ''));
+  console.log(c.bold('Average time: ') + `${avgMs} ms`);
 }
 
 function runConfig(): void {
@@ -326,7 +398,9 @@ const COMMANDS: Record<string, CommandSpec> = {
     ],
     action: runSync,
   },
-  status: { description: 'Show the latest context entry', options: {}, optionHelp: [], action: runStatus },
+  status: { description: 'Show the last run and the latest context entry', options: {}, optionHelp: [], action: runStatus },
+  context: { description: 'Print recent changes to stdout (for agent session-start hooks)', options: {}, optionHelp: [], action: runContext },
+  stats: { description: 'Show local run statistics (nothing is sent anywhere)', options: {}, optionHelp: [], action: runStats },
   uninstall: {
     description: 'Uninstall Git hooks',
     options: {},

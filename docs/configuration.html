@@ -19,7 +19,7 @@
     <div class="marquee-wrapper-top">
       <div class="marquee-content-top">
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
-        <span>⚡ VERSION 0.9.0-beta.9 IS LIVE! ⚡</span>
+        <span>⚡ VERSION 0.10.0 IS LIVE! ⚡</span>
         <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
       </div>
@@ -74,7 +74,7 @@
   "model": "gemini-2.5-flash",
   "apiUrl": "http://localhost:11434",
   "window": {
-    "days": 7,
+    "days": 0,
     "entries": 10,
     "maxTotalWords": 1000
   },
@@ -83,94 +83,74 @@
     "package-lock.json",
     "pnpm-lock.yaml",
     "dist/",
-    "node_modules/",
     "coverage/"
   ],
   "minDiffLines": 10,
-  "maxSummaryWords": 150
+  "maxSummaryWords": 250
 }</code></pre>
 
         <h2>⚙️ Configuration Parameter Guide</h2>
-        
+
         <h3>1. <code>target</code> (Type: <code>string</code> | Default: <code>"auto"</code>)</h3>
-        <p>Specifies the relative or absolute file path to write your AI context entries. When set to <code>"auto"</code>, Briefed dynamically scans your workspace root directory for context files in the following priority order:
-        <ol>
-          <li><code>CLAUDE.md</code> (First priority)</li>
-          <li><code>AGENTS.md</code></li>
-          <li><code>.github/copilot-instructions.md</code></li>
-        </ol>
-        If none are resolved, Briefed automatically generates a new <code>CLAUDE.md</code> file in your workspace root.</p>
+        <p>Where entries are written. <code>"auto"</code> means <code>.briefed/context.md</code>: the <code>.briefed/</code> folder carries its own <code>.gitignore</code>, so the file never dirties your working tree or causes merge conflicts. <code>briefed init</code> links it from <code>CLAUDE.md</code>, <code>AGENTS.md</code> and <code>.github/copilot-instructions.md</code> (creating a starter <code>CLAUDE.md</code> if none exist). Set a path such as <code>"CLAUDE.md"</code> to write entries straight into a committed file, as the CI workflow does. Paths must stay inside the repository.</p>
 
-        <h3>2. <code>backend</code> (Type: <code>"ollama" | "gemini" | "anthropic" | "none"</code> | Default: <code>"ollama"</code>)</h3>
-        <p>Chooses the LLM summarizing engine:
+        <h3>2. <code>backend</code> (Type: <code>"gemini" | "anthropic" | "ollama" | "none"</code> | Default: auto)</h3>
+        <p>When you don't set it, Briefed picks one from your environment:
         <ul>
-          <li><code>"ollama"</code>: Connects locally to run offline custom models (100% free).</li>
-          <li><code>"gemini"</code>: Leverages fast and cost-efficient Google Gemini API models.</li>
-          <li><code>"anthropic"</code>: Connects to high-fidelity Anthropic messages APIs.</li>
-          <li><code>"none"</code>: Bypasses LLMs completely, running standard local mechanical heuristics instantly.</li>
+          <li><code>GEMINI_API_KEY</code> set → <code>"gemini"</code></li>
+          <li><code>ANTHROPIC_API_KEY</code> or <code>BRIEFED_API_KEY</code> set → <code>"anthropic"</code></li>
+          <li>no key → <code>"none"</code>: summaries are built from commit messages (and PR titles from merge commits). Free, offline, and the fallback whenever an LLM call fails.</li>
         </ul>
-        </p>
+        <code>"ollama"</code> runs a local model and must be chosen explicitly.</p>
 
-        <h3>3. <code>model</code> (Type: <code>string</code> | Default: <code>"llama3"</code>)</h3>
-        <p>Specifies the model identifier passed to the active backend. If you override the backend at runtime (e.g. running <code>briefed run --backend gemini</code>), Briefed incorporates a **Smart Mismatch Auto-Resolution** that swaps backend-incompatible models to standard defaults (such as <code>gemini-2.5-flash</code>) with console warnings to prevent crashes.</p>
+        <h3>3. <code>model</code> (Type: <code>string</code> | Default: per backend)</h3>
+        <p><code>gemini-2.5-flash</code>, <code>claude-haiku-5-5</code> or <code>llama3</code>, matching the backend. If you override the backend at runtime (<code>briefed run --backend gemini</code>) and the configured model belongs to another backend, Briefed switches to that backend's default and warns.</p>
 
         <h3>4. <code>window</code> (Type: <code>object</code>)</h3>
-        <p>Configures the automated rolling fader window to prune older history and protect context lengths:
+        <p>Keeps the context file bounded:
         <ul>
-          <li><code>window.days</code> (Type: <code>number</code> | Default: <code>7</code>): Older entries beyond these days are deleted automatically.</li>
-          <li><code>window.entries</code> (Type: <code>number</code> | Default: <code>10</code>): Keeps the latest N entries, deleting oldest logs when exceeded.</li>
-          <li><code>window.maxTotalWords</code> (Type: <code>number</code> | Default: <code>1000</code>): The maximum cumulative words allowed across all combined entries. Older entries are pruned dynamically to strictly bound context file footprints.</li>
+          <li><code>window.entries</code> (Default: <code>10</code>): keeps the latest N entries.</li>
+          <li><code>window.maxTotalWords</code> (Default: <code>1000</code>): word budget across all entries; the oldest are pruned first.</li>
+          <li><code>window.days</code> (Default: <code>0</code> = off): optional maximum age. Off by default so a quiet week doesn't empty the context.</li>
         </ul>
         </p>
 
         <h3>5. <code>ignored</code> (Type: <code>string[]</code> | Default: <code>["*.lock", "package-lock.json", "pnpm-lock.yaml", "dist/", "*.map", "*.min.js", "*.min.css"]</code>)</h3>
-        <p>A list of glob matches. Files fitting these patterns are ignored and discarded during git diff parsing, preventing lockfile updates or compiled folder outputs from bloating token usage.</p>
+        <p><code>.gitignore</code>-style patterns, passed to git as exclude pathspecs, so matching files never reach the summarizer. <code>*.lock</code> and <code>dist/</code> match at any depth; patterns containing <code>/</code> are anchored at the repository root.</p>
 
         <h3>6. <code>minDiffLines</code> (Type: <code>number</code> | Default: <code>10</code>)</h3>
-        <p>The total number of changed lines (insertions + deletions) below which Briefed skips LLM summaries completely, instantly writing mechanical summaries locally to save API quotas and compute time.</p>
+        <p>Changes this small (in 2 files or fewer) skip the LLM and use the commit-message summary.</p>
 
         <h3>7. <code>maxSummaryWords</code> (Type: <code>number</code> | Default: <code>250</code>)</h3>
-        <p>Enforces a maximum word-count cap on LLM response summaries. If the returned summary exceeds this limit, Briefed iterates backward and prunes content at the last complete line boundary to keep log lists concise.</p>
+        <p>Word cap per LLM summary, cut at the last complete line.</p>
 
         <div class="brutal-callout callout-violet">
           <div class="callout-title">🛡️ Automated Secret Scrubbing</div>
-          <p class="callout-body">Briefed protects your security! Before sending diffs to cloud APIs (Gemini or Anthropic), it runs client-side regex detection filters to mask keys, database passwords, AWS credentials, bearer tokens, and GitHub SSH keys, ensuring secrets are never leaked to external networks.</p>
+          <p class="callout-body">Before a diff is sent to any backend (Gemini, Anthropic, or Ollama, since <code>apiUrl</code> can point at a remote host), Briefed masks API keys, database passwords, AWS credentials, bearer tokens, GitHub and npm tokens, and private keys. Gemini never reads <code>ANTHROPIC_API_KEY</code>, so a key is never sent to the wrong provider.</p>
         </div>
 
         <h2>🤖 Core LLM Summarization Prompt</h2>
-        <p>Briefed maintains full transparency. To ensure your AI backends respond in a standardized, parseable format without conversational fluff or markdown enclosures, Briefed runs the exact structured template below:</p>
-        <pre><code>Summarize the following git diff.
-You MUST output ONLY a structured block format with exactly these categories: FILES, ADDED, REMOVED, RENAMED, DEPS.
-Use pipe (|) to separate items within each category. Do not include any markdown fences, extra explanations, or conversational filler.
+        <p>Every backend gets the same prompt, written for the AI agent that will read the result:</p>
+        <pre><code>You write the "recent changes" note that an AI coding agent reads before working in this repository.
+From the commits and diff below, list only facts that change how the agent should work: new, renamed or removed commands, scripts, modules, public APIs, config keys, environment variables, dependencies, conventions, and breaking behavior changes.
+Output 1 to 5 lines, each starting with "- ". No headings, no file lists, no line counts, no markdown fences, no filler.
+If nothing matters to an agent, output exactly: - Minor changes only.
 
-Format:
-FILES: &lt;comma-separated list of directories/files changed&gt;
-ADDED: &lt;key features, modules or code additions, separated by |&gt;
-REMOVED: &lt;key removals or deprecations, separated by |&gt;
-RENAMED: &lt;files renamed, e.g. path/to/old -&gt; path/to/new, separated by |&gt;
-DEPS: &lt;dependency changes or change counts, e.g., "X additions, Y deletions"&gt;
+Commits:
+&lt;commit subjects and PR titles, newest first&gt;
 
-Git Diff:
-&lt;rawDiff&gt;
+Changed files:
+&lt;one per line, ignored patterns excluded&gt;
 
-List of changed files:
-&lt;listOfFilesChanged&gt;
+Git diff:
+&lt;scrubbed diff; over 8,000 characters each file gets an equal share&gt;</code></pre>
 
-Change Statistics:
-Additions: &lt;additionsCount&gt;
-Deletions: &lt;deletionsCount&gt;</code></pre>
-
-        <h2>🔌 Auto-Injected AI Skill Guidelines</h2>
-        <p>Briefed makes sure your AI coding assistants (like <strong>Claude Code</strong> or <strong>Antigravity</strong>) are immediately aware of the sync workflow without any manual instruction writing. When Briefed dynamically creates your context file (e.g. <code>CLAUDE.md</code>), it automatically prefixes the file with the following concise, high-value **AI Skill Guidelines**:</p>
-        <pre><code># AI Context
-
-## Briefed CLI Guidelines
-- Run `briefed run` to manually synchronize git context or review change stats.
-- Run `briefed status` to inspect the latest summarized entry.
-- Do not manually edit the `&lt;!-- BRIEFED_START --&gt;` block; the post-merge and post-rewrite hooks handle it automatically.
-
-&lt;!-- BRIEFED_START --&gt;
-&lt;!-- BRIEFED_END --&gt;</code></pre>
+        <h2>🔌 How agents find the context</h2>
+        <p><code>briefed init</code> appends this to each agent file it finds. Claude Code resolves the <code>@</code> import automatically; other agents follow the sentence:</p>
+        <pre><code>## Recent upstream changes
+Before starting work, read .briefed/context.md: what changed upstream recently, newest first (auto-generated by Briefed from git history).
+@.briefed/context.md</code></pre>
+        <p>For agents that support session-start hooks, <code>briefed context</code> prints the same entries to stdout.</p>
       </article>
 
     </div>

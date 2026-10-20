@@ -2,8 +2,9 @@
 # BRIEFED_HOOK
 [ "$1" = "rebase" ] || exit 0
 cd "$(git rev-parse --show-toplevel)" || exit 0
-if command -v briefed >/dev/null 2>&1; then b=briefed
-elif [ -x ./node_modules/.bin/briefed ]; then b=./node_modules/.bin/briefed
+# Project-pinned version first, so a stale global install can't override it
+if [ -x ./node_modules/.bin/briefed ]; then b=./node_modules/.bin/briefed
+elif command -v briefed >/dev/null 2>&1; then b=briefed
 else b="npx --yes --package=briefed-cli briefed"; fi
 # Background so git returns immediately; last run's output lands in .git/briefed.log
 ($b run >"$(git rev-parse --git-path briefed.log)" 2>&1 &)

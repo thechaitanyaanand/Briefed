@@ -43,22 +43,24 @@ That's it. Pull, merge or switch branches as usual. Other commands:
 | Command | What it does |
 | :--- | :--- |
 | `briefed run` | Summarize changes since `ORIG_HEAD` now (`--verbose` to see details, `--since <ref>` to pick a base) |
-| `briefed status` | Show the latest entry |
+| `briefed status` | Show the last run (when, which backend, how long) and the latest entry |
+| `briefed context` | Print recent changes to stdout, for an agent's session-start hook |
+| `briefed stats` | Local run statistics: runs, LLM vs commit-log summaries, fallbacks, average time (nothing leaves your machine) |
 | `briefed config` | Print the resolved configuration (API key redacted) |
 | `briefed init -i` | Interactive setup for backend, target and API key |
 | `briefed uninstall` | Remove the hooks |
 
-Hook output from the last run goes to `.git/briefed.log`.
+Hook output from the last run goes to `.git/briefed.log`. **After upgrading Briefed, re-run `briefed init`:** it upgrades hooks written by older versions in place and leaves your own hook code untouched.
 
 ### Team setup
 
 Git hooks aren't committed, so each teammate runs `npx briefed-cli init` once per clone. To make it automatic for an npm project, add it to `prepare`:
 
 ```json
-{ "scripts": { "prepare": "briefed init" }, "devDependencies": { "briefed-cli": "^0.9.0-beta.9" } }
+{ "scripts": { "prepare": "briefed init" }, "devDependencies": { "briefed-cli": "^0.10.0" } }
 ```
 
-If the repo uses Husky, `init` writes into `.husky/` instead of `.git/hooks/`, so the hooks are shared through the repo.
+The hooks run the project's own `node_modules/.bin/briefed` before any global install, so the whole team uses the pinned version. If the repo uses Husky, `init` writes into `.husky/` instead of `.git/hooks/`, so the hooks are shared through the repo.
 
 ---
 
@@ -81,7 +83,9 @@ An entry looks like this:
 FILES: src/security/login.ts, package.json, .env.example
 ```
 
-Without an LLM, the bullets are the commit subjects, followed by a `STATS:` line.
+Without an LLM, the bullets are the commit subjects (with PR titles taken from GitHub merge commits), followed by a `STATS:` line.
+
+**Agents other than Claude Code:** Claude Code resolves the `@.briefed/context.md` import automatically. Codex, Copilot and Cursor follow the sentence `init` adds ("Before starting work, read .briefed/context.md…"). For an agent with a session-start hook, run `briefed context` there to inject the entries directly.
 
 ---
 
@@ -149,6 +153,7 @@ To add the optional key: **Settings → Secrets and variables → Actions → Ne
 
 - **Nothing updates after a pull:** check `.git/briefed.log`, then run `briefed run --verbose`.
 - **`LLM summarization failed ... Falling back to commit-log summary`:** the backend was unreachable or the key is missing. The entry is still written, built from commit messages.
-- **Upgrading from ≤ 0.9.0-beta.9:** entries used to be written into `CLAUDE.md`. Re-run `briefed init` to switch to `.briefed/context.md` (then delete the old marker block), or set `"target": "CLAUDE.md"` to keep the old behavior.
+- **Is it running? Is the LLM working?** `briefed stats` counts runs and LLM fallbacks.
+- **Upgrading from 0.9.x:** entries used to be written into `CLAUDE.md`. Re-run `briefed init` to upgrade the hooks and switch to `.briefed/context.md` (then delete the old marker block), or set `"target": "CLAUDE.md"` to keep the old behavior.
 
 See [PROMPT.md](PROMPT.md) for prompt design notes and [CONTRIBUTING.md](CONTRIBUTING.md) to get involved.

@@ -46,8 +46,10 @@ function findGitPaths(cwd: string): { gitDir: string; projectRoot: string } {
 /**
  * Installs Briefed post-merge, post-rewrite and post-checkout Git hooks.
  * Targets `.husky/` directory if it exists, otherwise defaults to `.git/hooks/`.
+ * Hooks written by an older Briefed are upgraded in place, so re-running `init` after
+ * an update picks up the current templates instead of skipping them.
  */
-export function install(cwd?: string): { installed: string[], skipped: string[], warnings: string[] } {
+export function install(cwd?: string): { installed: string[], upgraded: string[], skipped: string[], warnings: string[] } {
   const actualCwd = cwd || process.cwd();
   const { gitDir, projectRoot } = findGitPaths(actualCwd);
 
@@ -57,52 +59,47 @@ export function install(cwd?: string): { installed: string[], skipped: string[],
   const hooksDir = hasHusky ? huskyDir : path.join(gitDir, 'hooks');
 
   const installed: string[] = [];
+  const upgraded: string[] = [];
   const skipped: string[] = [];
   const warnings: string[] = [];
 
   for (const hook of HOOKS) {
     const hookPath = path.join(hooksDir, hook.name);
+    const exists = fs.existsSync(hookPath);
+    const content = exists ? fs.readFileSync(hookPath, 'utf-8').replace(/\r\n/g, '\n') : '';
+    const block = `# BRIEFED_HOOK_APPENDED_START\n${hook.bodyContent}\n# BRIEFED_HOOK_APPENDED_END\n`;
 
-    if (fs.existsSync(hookPath)) {
-      const content = fs.readFileSync(hookPath, 'utf-8');
-
-      // Check if either standalone or chained sentinel already exists
-      if (content.includes('# BRIEFED_HOOK') || content.includes('# BRIEFED_HOOK_APPENDED_START')) {
-        skipped.push(hook.name);
-        continue;
-      }
-
-      // Append hook body invocation to existing user hook
-      let toAppend = '';
-      if (!content.endsWith('\n')) {
-        toAppend += '\n';
-      }
-      toAppend += `# BRIEFED_HOOK_APPENDED_START\n${hook.bodyContent}\n# BRIEFED_HOOK_APPENDED_END\n`;
-
-      const sanitizedAppended = (content + toAppend).replace(/\r\n/g, '\n');
-      fs.writeFileSync(hookPath, sanitizedAppended);
+    let next: string;
+    let ours = true;
+    if (content.includes('# BRIEFED_HOOK_APPENDED_START')) {
+      // Chained into a user hook: refresh only our block
+      next = content.replace(/# BRIEFED_HOOK_APPENDED_START[\s\S]*?# BRIEFED_HOOK_APPENDED_END\n?/, block);
+    } else if (content.includes('# BRIEFED_HOOK')) {
+      next = hook.fullContent;
+    } else if (exists) {
+      next = `${content}${content.endsWith('\n') ? '' : '\n'}${block}`;
       warnings.push(`Appended to existing hook: ${hook.name}`);
-      installed.push(hook.name);
-
-      // On non-Windows: ensure executable bit is set
-      if (process.platform !== 'win32') {
-        fs.chmodSync(hookPath, 0o755);
-      }
+      ours = false;
     } else {
-      // Create new standalone hook
-      fs.mkdirSync(path.dirname(hookPath), { recursive: true });
-      const sanitizedStandalone = hook.fullContent.replace(/\r\n/g, '\n');
-      fs.writeFileSync(hookPath, sanitizedStandalone);
-      installed.push(hook.name);
-
-      // On non-Windows: ensure executable bit is set
-      if (process.platform !== 'win32') {
-        fs.chmodSync(hookPath, 0o755);
-      }
+      next = hook.fullContent;
+      ours = false;
     }
+
+    if (next === content) {
+      skipped.push(hook.name);
+      continue;
+    }
+
+    fs.mkdirSync(path.dirname(hookPath), { recursive: true });
+    fs.writeFileSync(hookPath, next);
+    // On non-Windows: ensure executable bit is set
+    if (process.platform !== 'win32') {
+      fs.chmodSync(hookPath, 0o755);
+    }
+    (ours ? upgraded : installed).push(hook.name);
   }
 
-  return { installed, skipped, warnings };
+  return { installed, upgraded, skipped, warnings };
 }
 
 /**

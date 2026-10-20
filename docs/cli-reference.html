@@ -19,7 +19,7 @@
     <div class="marquee-wrapper-top">
       <div class="marquee-content-top">
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
-        <span>⚡ VERSION 0.9.0-beta.9 IS LIVE! ⚡</span>
+        <span>⚡ VERSION 0.10.0 IS LIVE! ⚡</span>
         <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
       </div>
@@ -59,66 +59,58 @@
       <!-- Right-hand main content -->
       <article class="docs-content-card">
         <h1>03. CLI COMMANDS</h1>
-        <p>Briefed provides a single zero-dependency bin utility named <code>briefed</code> built on Commander.js. This page documents the parameters, behaviors, options, and commands exposed by the CLI tool.</p>
+        <p>Briefed is a single <code>briefed</code> binary with zero runtime dependencies (Node 18.3+ standard library only). Run <code>briefed &lt;command&gt; --help</code> for any command.</p>
 
         <h2>⚙️ Subcommands Directory</h2>
-        
+
         <h3>1. <code>briefed init</code></h3>
-        <p>Installs Git background hooks (<code>post-merge</code> and <code>post-rewrite</code>) and scans for target context files inside your workspace.</p>
-        <pre><code># Standard initialization
+        <p>Installs the <code>post-merge</code>, <code>post-rewrite</code> and <code>post-checkout</code> hooks (into <code>.husky/</code> if present, otherwise <code>.git/hooks/</code>) and links <code>.briefed/context.md</code> from your agent files. Re-run it after upgrading Briefed: hooks written by an older version are upgraded in place, and your own hook code is left untouched.</p>
+        <pre><code># Standard initialization (or: npx briefed-cli init)
 briefed init
 
-# Interactive wizard setup
-briefed init --interactive
-# OR shorthand
+# Interactive wizard: target, backend, API key
 briefed init -i</code></pre>
-        <p><strong>Interactive Wizard Questions:</strong>
-        <ol>
-          <li><code>Preferred context file path [default: auto]</code>: Choose a custom output destination or run auto-scans.</li>
-          <li><code>Preferred LLM backend [default: ollama]</code>: Input <code>ollama</code>, <code>gemini</code>, <code>anthropic</code>, or <code>none</code>.</li>
-        </ol>
-        On completions, it prints a **Next Steps** onboarding checklist detailing how to stage config files, run manual sync validations, and inspect configurations.</p>
 
         <h3>2. <code>briefed run</code></h3>
-        <p>Manually computes the diff between `ORIG_HEAD` and `HEAD` and appends the summarized context entry inside the target file.</p>
-        <pre><code># Trigger context updates manually
-briefed run [options]</code></pre>
-        <p><strong>Available Flags & Options:</strong>
+        <p>Summarizes what changed since <code>ORIG_HEAD</code> (falling back to <code>HEAD~1</code>) and prepends an entry to the target file. The hooks run this in the background, so git never waits.</p>
+        <pre><code>briefed run [options]</code></pre>
+        <p><strong>Options:</strong>
         <ul>
-          <li><code>-b, --backend &lt;name&gt;</code>: Temporarily override backend (e.g. <code>gemini</code>, <code>anthropic</code>, <code>ollama</code>, <code>none</code>).</li>
-          <li><code>-m, --model &lt;name&gt;</code>: Temporarily override LLM model.</li>
-          <li><code>-t, --target &lt;path&gt;</code>: Temporarily override write path destination.</li>
-          <li><code>-v, --verbose</code>: Print diagnostic logs, insertions/deletions, used brain, and process elapsed times.</li>
+          <li><code>-b, --backend &lt;backend&gt;</code>: override the backend (<code>gemini</code>, <code>anthropic</code>, <code>ollama</code>, <code>none</code>).</li>
+          <li><code>-m, --model &lt;model&gt;</code>: override the model.</li>
+          <li><code>-t, --target &lt;path&gt;</code>: override the target file.</li>
+          <li><code>--since &lt;ref&gt;</code>: diff from <code>merge-base(&lt;ref&gt;, HEAD)</code> instead of <code>ORIG_HEAD</code> (used by the branch-switch hook).</li>
+          <li><code>-v, --verbose</code>: print diff stats, the backend used and the elapsed time.</li>
         </ul>
         </p>
 
         <h3>3. <code>briefed status</code></h3>
-        <p>Reads and validates your active context file target, parses the log blocks, and prints details about the latest compiled entry:</p>
-        <pre><code>briefed status</code></pre>
-        <p><strong>Console Readout Output:</strong>
-        <pre><code>Target File: C:\Users\Username\Briefed\CLAUDE.md
-Date:        2026-06-02T00:24:22+05:30
-Commit:      abc123auth
-Branch:      feature/auth-oauth2
+        <p>Shows the last run and the latest entry:</p>
+        <pre><code>Last run:    2026-10-20T14:18:36Z (gemini, 1840 ms)
+Target File: /work/app/.briefed/context.md
+Date:        2026-10-20T14:18:36Z
+Commit:      614df77…
+Branch:      feature/auth
 
 Summary:
-FILES: src/auth.ts, src/types.ts
-ADDED: OAuth2 login flow helper, OAuthTokenTypes interface
-REMOVED: Old insecure JWT legacy crypt.ts
-DEPS: 145 insertions (+), 32 deletions (-)</code></pre>
-        </p>
+- Auth moved from src/auth to src/security; import from there
+- New `npm run db:migrate` script; run it after pulling</code></pre>
 
-        <h3>4. <code>briefed config</code></h3>
-        <p>Deep-merges defaults, environment variables, user overrides, and prints the active Briefed configuration as a formatted JSON block.</p>
-        <pre><code>briefed config</code></pre>
+        <h3>4. <code>briefed context</code></h3>
+        <p>Prints the recent-changes entries to stdout. Wire it to an agent's session-start hook and the agent gets the latest context without reading any file.</p>
+
+        <h3>5. <code>briefed stats</code></h3>
+        <p>Local run statistics: entries and words in the context file, the number of runs, LLM vs commit-log summaries (including fallbacks after an LLM error), and the average run time. Stored in <code>.git/briefed-stats.jsonl</code>; nothing is sent anywhere.</p>
+
+        <h3>6. <code>briefed config</code></h3>
+        <p>Prints the resolved configuration (defaults ← <code>~/.briefed.json</code> ← <code>.briefed.json</code> ← environment) as JSON.</p>
         <div class="brutal-callout callout-yellow">
           <div class="callout-title">🔒 API key masking protection</div>
-          <p class="callout-body">Leaking keys in plain text inside console logs or CI logs poses a critical security risk. Briefed automatically detects resolved <code>apiKey</code> values in the printout and redacts them with <code>[REDACTED]</code>, keeping developer credentials secure.</p>
+          <p class="callout-body">Any resolved <code>apiKey</code> is printed as <code>[REDACTED]</code>, so the output is safe to paste into issues or CI logs.</p>
         </div>
 
-        <h3>5. <code>briefed uninstall</code></h3>
-        <p>Removes all Briefed hook elements from your repository. If Husky is active, it safely deletes Briefed entries from <code>.husky/post-merge</code> and <code>.husky/post-rewrite</code>. If standard git hooks are active, it slices out Briefed lines cleanly without affecting other chained scripts in standard `.git/hooks/` files.</p>
-        <pre><code>briefed uninstall</code></pre>
+        <h3>7. <code>briefed uninstall</code></h3>
+        <p>Removes Briefed's hooks from <code>.husky/</code> and <code>.git/hooks/</code>. Standalone hooks are deleted; when Briefed was chained into one of your hooks, only its block is cut out.</p>
       </article>
 
     </div>

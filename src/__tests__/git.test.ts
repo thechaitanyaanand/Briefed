@@ -178,7 +178,8 @@ describe('git.ts', () => {
         'diff ORIG_HEAD HEAD': 'diff details here\n',
         'reflog': 'checkout: moving from feature/payments to main\n',
         'log -1': 'checkout: moving from feature/payments to main\n',
-        'log --no-merges': 'Add payments\nFix login\n',
+        // a PR merge (title in body), a plain merge (dropped), and a normal commit
+        'log -n 30': 'Merge pull request #12 from o/payments\x1fAdd payments\n\nLonger PR text\x1e\nMerge branch \'main\' into x\x1f\x1e\nFix login\x1f\x1e',
       };
 
       const result = getDiff(undefined, ['*.lock', 'dist/', 'custom_ignored/**']);
@@ -205,7 +206,7 @@ describe('git.ts', () => {
         'diff base456 HEAD': 'diff from base\n',
         'reflog': 'checkout: moving from main to feature\n',
         'log -1': 'wip\n',
-        'log --no-merges': 'wip\n',
+        'log -n 30': 'wip\x1f\x1e',
       };
       expect(getDiff(undefined, [], false, undefined, 'prevsha').rawDiff).toBe('diff from base');
 
@@ -221,7 +222,7 @@ describe('git.ts', () => {
         'diff ORIG_HEAD HEAD': 'd\n',
         'reflog': "pull --no-rebase origin master: Merge made by the 'ort' strategy.\n",
         'log -1': "Merge branch 'master' of github.com:o/r\n",
-        'log --no-merges': '',
+        'log -n 30': '',
       };
       expect(getDiff().sourceBranch).toBe('master');
     });
@@ -258,7 +259,7 @@ describe('git.ts', () => {
         'diff ORIG_HEAD HEAD': bigFile + smallFile,
         'reflog': 'commit: initial\n',
         'log -1': 'Merge branch \'feature/auth\'\n',
-        'log --no-merges': '',
+        'log -n 30': '',
       };
 
       const result = getDiff();

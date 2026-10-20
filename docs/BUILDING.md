@@ -366,12 +366,11 @@ A developer tool lives or dies in its first five minutes and its first week. Eac
 
 | Idea | Why | How to know it worked |
 | --- | --- | --- |
-| `briefed context` command (stdout) for a Claude Code `SessionStart` hook | Push-free mode: nothing written to disk, always current | Users adopt it over file mode; issues about file churn disappear |
+| Done in 0.10.0: `briefed context`, `briefed stats`, `init` upgrading old hooks, project-local binary first, PR titles from merge commits | Upgrades reach users; value is visible | Issues about stale hooks stop |
 | Summarize since *your* last session (per-developer state in `.git/`) | Also catches commits that arrived outside hooks | Fewer "stale context" reports |
 | Cursor rules / Windsurf targets | More agents covered by the link step | Installs among those editors' users |
 | Smarter diff budget (redistribute unused share, prefer source over tests) | Better summaries on big merges | Fewer "Minor changes only" on large diffs |
 | Per-file importance scoring (exports, config, scripts weighted up) | Agent-relevant facts surface first | Manual review of 20 real merges |
-| Update the `docs/*.html` site for the new defaults | The site still describes the 7-day window and the old format | Docs match `briefed --help` |
-| Opt-in telemetry-free metrics: `briefed stats` (entries written, LLM vs fallback, average latency) | Users see the value; you get bug reports with numbers | Bug reports include stats output |
+| A 20-second demo GIF in the README | Shows the value faster than any text | Click-through from README to install |
 
 Measure success by **retention, not installs:** is the hook still installed a month later? The proxies you can see without telemetry are GitHub issues ("it slowed my pull", "conflicts in CLAUDE.md"), npm weekly downloads after the first week, and stars from people who also open issues.

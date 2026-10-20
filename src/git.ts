@@ -271,8 +271,19 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
   let commits: string[] = [];
   try {
     const range = baseRef === EMPTY_TREE ? ['HEAD'] : [`${baseRef}..HEAD`];
-    commits = runGit(['log', '--no-merges', '-n', '30', '--format=%s', ...range], cwd)
-      .split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    // Records are subject \x1f body \x1e. A GitHub "Merge pull request" commit carries the PR title
+    // as its body's first line, the best summary of everything it merged; other merges add nothing.
+    commits = runGit(['log', '-n', '30', '--format=%s%x1f%b%x1e', ...range], cwd)
+      .split('\x1e')
+      .map(record => {
+        const [subject = '', body = ''] = record.trim().split('\x1f');
+        if (/^Merge pull request #\d+/.test(subject)) {
+          return body.trim().split(/\r?\n/)[0] ?? '';
+        }
+        return subject.startsWith('Merge ') ? '' : subject;
+      })
+      .map(line => line.trim())
+      .filter(Boolean);
   } catch {
     // Ignore errors
   }
@@ -290,6 +301,13 @@ export function getDiff(cwd?: string, ignored?: string[], verbose?: boolean, tar
     commits,
     isEmpty,
   };
+}
+
+/**
+ * Absolute path of a file inside the git directory (correct in worktrees and submodules too).
+ */
+export function gitPath(name: string, cwd?: string): string {
+  return path.resolve(cwd || process.cwd(), runGit(['rev-parse', '--git-path', name], cwd));
 }
 
 /**

@@ -19,7 +19,7 @@
     <div class="marquee-wrapper-top">
       <div class="marquee-content-top">
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
-        <span>⚡ VERSION 0.9.0-beta.9 IS LIVE! ⚡</span>
+        <span>⚡ VERSION 0.10.0 IS LIVE! ⚡</span>
         <span>⚡ FULLY OPEN SOURCE CLI TOOL ⚡</span>
         <span>⚡ BRIEFED DEV-PORTAL NATIVE DOCUMENTATION ⚡</span>
       </div>
@@ -59,88 +59,51 @@
       <!-- Right-hand main content -->
       <article class="docs-content-card">
         <h1>01. GETTING STARTED GUIDE</h1>
-        <p>Briefed bridges the AI latency context gap for developers by automatically summarizing code diffs and keeping context logs up-to-date in target files like CLAUDE.md. This ensures your AI pair programmer (Cursor, Windsurf, Claude Dev) is always synced with recent pulled, merged, or rebased edits in the background.</p>
+        <p>Briefed keeps your AI coding agent (Claude Code, Codex, Copilot, Cursor) in sync with what your teammates changed. After every pull, merge, rebase or branch switch, it writes a short note of agent-relevant changes to <code>.briefed/context.md</code>, which your agent files link to. No API key is needed to start.</p>
 
         <h2>📦 1. Installation</h2>
-        <p>Install Briefed globally once — then run <code>briefed init</code> inside any repo you want to track. You only install once, set up per-repo.</p>
-        <pre><code># Install globally (do this once)
-npm install -g briefed-cli</code></pre>
+        <p>No install needed: <code>npx briefed-cli init</code> works on its own. To install once for all repos:</p>
+        <pre><code>npm install -g briefed-cli</code></pre>
 
         <h2>⚙️ 2. Hooks Initialization</h2>
-        <p>Navigate to the root directory of any Git repository you want to track, then run:</p>
-        <pre><code># Navigate into your project repo first
-cd /path/to/your-repo
-
-# Install hooks into this repo
-briefed init
-
-# Or use the interactive setup wizard (sets backend, target file)
-briefed init --interactive</code></pre>
-        <p>This installs <code>post-merge</code> and <code>post-rewrite</code> hooks into <code>.git/hooks/</code>. If you use Husky, it appends into <code>.husky/</code> instead. <strong>Repeat this step for every repo you want Briefed to track.</strong> The global install means you only install the CLI once.</p>
+        <p>From the root of any Git repository you want to track:</p>
+        <pre><code>cd /path/to/your-repo
+briefed init            # or: npx briefed-cli init
+git add CLAUDE.md && git commit -m "Link Briefed context"</code></pre>
+        <p><code>init</code> installs the <code>post-merge</code>, <code>post-rewrite</code> and <code>post-checkout</code> hooks into <code>.git/hooks/</code> (or <code>.husky/</code> if present), and appends a link to <code>.briefed/context.md</code> in <code>CLAUDE.md</code>, <code>AGENTS.md</code> and <code>.github/copilot-instructions.md</code>. The <code>.briefed/</code> folder ignores itself, so the only file to commit is that one-line link. Re-run <code>init</code> after upgrading Briefed to refresh the hooks.</p>
 
         <div class="brutal-callout callout-green">
           <div class="callout-title">✅ What happens after init</div>
-          <p class="callout-body">Every time you run <code>git pull</code>, <code>git merge</code>, or <code>git rebase</code>, the hook fires silently in the background. It diffs what changed, summarizes it (via your configured LLM or the built-in mechanical fallback), and appends a structured entry to your context file. Your AI coding tool reads that file automatically — no manual context dumping needed.</p>
+          <p class="callout-body">On every <code>git pull</code>, <code>merge</code>, <code>rebase</code> or branch switch, the hook starts Briefed in the background and git returns immediately. Briefed diffs what arrived (lockfiles and build output excluded), summarizes it, and prepends an entry to <code>.briefed/context.md</code>. The last run's output is in <code>.git/briefed.log</code>; <code>briefed status</code> shows when it last ran.</p>
         </div>
 
-        <h2>🔑 3. Setting API Keys</h2>
-        <p>To connect Cloud LLM backend aggregators (Google Gemini or Anthropic Claude), you must configure credentials. You have three flexible options depending on your security preferences:</p>
-        
-        <h3>Option A: Shell Environment Variables (Temporary/Session-Only)</h3>
-        <p>Exporting the API key inside your terminal session keeps it in-memory, making it extremely secure against accidental check-ins to GitHub.</p>
+        <h2>👥 3. Team Setup</h2>
+        <p>Git hooks aren't committed, so each teammate runs <code>npx briefed-cli init</code> once per clone. For npm projects, make it automatic:</p>
+        <pre><code>{ "scripts": { "prepare": "briefed init" }, "devDependencies": { "briefed-cli": "^0.10.0" } }</code></pre>
+        <p>The hooks use the project's own <code>node_modules/.bin/briefed</code> before any global install, so everyone runs the pinned version.</p>
+
+        <h2>🔑 4. Optional: LLM Summaries</h2>
+        <p>Without a key, entries list commit subjects and PR titles. Export a key and Briefed switches to LLM summaries automatically:</p>
         <pre><code># Git Bash / macOS / Linux
-export GEMINI_API_KEY="your-google-studio-api-key"
+export GEMINI_API_KEY="your-key"        # or ANTHROPIC_API_KEY
 
 # Windows PowerShell
-$env:GEMINI_API_KEY="your-google-studio-api-key"
+$env:GEMINI_API_KEY="your-key"</code></pre>
+        <p>You can also put <code>"apiKey"</code> in <code>~/.briefed.json</code> (applies to every repo). Avoid putting keys in a repository's <code>.briefed.json</code>; if you do, gitignore it.</p>
 
-# Windows CMD Prompt
-set GEMINI_API_KEY=your-google-studio-api-key</code></pre>
-
-        <h3>Option B: Global User Configuration (Permanent for all local projects)</h3>
-        <p>Place a <code>.briefed.json</code> configuration file inside your global user home directory (e.g. <code>C:\Users\Username</code> on Windows or <code>~/.briefed.json</code> on macOS/Linux):</p>
-        <pre><code>{
-  "apiKey": "your-gemini-or-anthropic-api-key"
-}</code></pre>
-        <p>Briefed automatically deep-merges this global file as a fallback, ensuring your credentials are accessible across all repositories without cluttering repository folders.</p>
-
-        <h3>Option C: Local Configuration (Permanent for this repo)</h3>
-        <p>Place `.briefed.json` directly in your repository root directory. Make sure you add <code>.briefed.json</code> to your <code>.gitignore</code> file to prevent leaking secrets on Git repositories.</p>
-
-        <h2>🚀 4. Triggering Your First Sync</h2>
-        <p>To manually trigger a diff and write your first context entry, run:</p>
-        <pre><code>briefed run</code></pre>
-        <p>Use <code>--verbose</code> to inspect exactly what it's doing — which files changed, which backend was used, and how long it took:</p>
-        <pre><code>briefed run --verbose</code></pre>
+        <h2>🚀 5. Triggering Your First Sync</h2>
+        <pre><code>briefed run --verbose   # summarize now, with details
+briefed status          # last run + latest entry
+briefed stats           # local run statistics</code></pre>
 
         <div class="brutal-callout callout-yellow">
           <div class="callout-title">💡 CI/CD is optional</div>
-          <p class="callout-body">Briefed works <strong>locally via Git hooks</strong> — that's the primary mechanism. GitHub Actions is only useful if your team merges PRs through the GitHub web UI and wants the context file committed back to the repo centrally. For most developers using Briefed locally, CI setup is not needed. See the <a href="ci-cd.html">CI/CD Integration guide</a> if you need it.</p>
+          <p class="callout-body">Local hooks are the primary mechanism. GitHub Actions only helps if your team merges PRs in the GitHub web UI and wants one committed context file. See the <a href="ci-cd.html">CI/CD Integration guide</a>.</p>
         </div>
 
-      <!-- Agentic IDE Prompt Section -->
-      <section class="brutal-section" style="margin-top: 3rem; padding-top: 2rem; border-top: 4px solid var(--brutal-black);">
-        <h2>🤖 Custom Rules for Agentic IDEs (Cursor, Windsurf, Claude Code)</h2>
-        <div class="brutal-callout callout-violet">
-          <div class="callout-title">💡 Why This Prompt is Vital</div>
-          <p class="callout-body">
-            By default, when your AI assistant (like Claude Code in terminal or Cursor in editor) boots up, it has no native awareness that Briefed is running git hooks and maintaining a live chronological history in your workspace context files. 
-            <br><br>
-            Feeding this <strong>System Instruction Directive</strong> into your agent's custom rules (e.g. <code>.cursorrules</code>, Claude's custom prompt, or your global IDE rules) instructs the agent to automatically parse the Briefed block. This prevents the agent from running expensive, redundant <code>git diff</code> commands (saving tokens and API latency) and guarantees <strong>instant, cross-agent memory alignment</strong>!
-          </p>
-        </div>
-
-        <p>Copy and paste the exact rules directive block below into your global custom instructions, <code>.cursorrules</code>, or Claude Code system prompts:</p>
-        <pre><code># Git Context Alignment (Briefed CLI)
-This project utilizes the Briefed CLI tool, which automatically updates the active AI context file (e.g. CLAUDE.md) after every \`git pull\`, merge, or rebase.
-
-## Instructions for the AI Agent:
-1. Always parse the dated Git context blocks written inside the \`<!-- BRIEFED_START -->\` and \`<!-- BRIEFED_END -->\` markers in your context file to keep your short-term memory aligned with the latest workspace state.
-2. Do not attempt to run manual git diffs or git logs to understand recent pull histories; instead, inspect the structured logs inside the context markers.
-3. The context log is bounded dynamically under a strict \`maxTotalWords\` ceiling (~1000 words) to protect your context window. Parse only the active entries between the start and end markers.
-4. Entries have been sanitized client-side of any internal reasoning (\`&lt;think&gt;\`) blocks and lockfile bloat, leaving only high-signal category blocks (\`FILES\`, \`ADDED\`, \`REMOVED\`, \`RENAMED\`, \`DEPS\`).
-5. Use this structural information to instantly grasp which endpoints, APIs, or components were recently introduced or deprecated, ensuring all code suggestions align 100% with the latest codebase updates.</code></pre>
-      </section>
+        <h2>🤖 6. Agents Without Import Support</h2>
+        <p>Claude Code loads <code>.briefed/context.md</code> through the <code>@</code> import automatically. Codex, Copilot and Cursor read the link's instruction and open the file themselves. For an agent with a session-start hook, run <code>briefed context</code>: it prints the recent changes straight into the agent's context.</p>
+      </article>
 
     </div>
   </main>
